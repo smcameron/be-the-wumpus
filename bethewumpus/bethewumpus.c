@@ -102,7 +102,7 @@
 #define LEVEL_NINE_SOUND 36 
 #define LEVEL_TEN_SOUND 37 
 
-int debugmode = 1;
+int debugmode = 0;
 double water_x = SCREEN_WIDTH/2;
 double water_y = 0;
 int level = 0;
