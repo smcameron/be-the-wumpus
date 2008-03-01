@@ -224,6 +224,13 @@ void setup_volume_adjusting_profile(struct volume_adjusting_profile_t *vap,
 	vap->vaf = vaf;
 }
 
+double safe_denominator(double x) 
+{
+	if (x < 5.0)
+		return 5.0;
+	else
+		return x;	
+}
 /***********************************************************************/
 /* Beginning of AUDIO related code                                     */
 /***********************************************************************/
@@ -259,11 +266,11 @@ void find_sound_adjust_factors(double x, double y, double angle,
 	rightdist = sqrt((sx - rightx)*(sx - rightx) + (sy - righty)*(sy - righty)); 	
 
 	if (falloff == SQRTFALLOFF) {
-		*leftfactor = 10.0/sqrt(leftdist);
-		*rightfactor = 10.0/sqrt(rightdist);
+		*leftfactor = 10.0/safe_denominator(sqrt(leftdist));
+		*rightfactor = 10.0/safe_denominator(sqrt(rightdist));
 	} else if (falloff == LINEARFALLOFF) {
-		*leftfactor = 4.0/(leftdist);
-		*rightfactor = 4.0/(rightdist);
+		*leftfactor = 4.0/safe_denominator(leftdist);
+		*rightfactor = 4.0/safe_denominator(rightdist);
 	}
 
 	/* attenuate the volume in the ear facing away from the sound source: */
