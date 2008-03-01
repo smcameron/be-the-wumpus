@@ -7,6 +7,6 @@ done  * Add levels
 done  * Add eating noises
       * Add level win intermission of some sort (done... but very lamely.)
       * Add game over intermission of some sort
-      * Recompute sound volumes on entry to sound callback, rather than
+done  * Recompute sound volumes on entry to sound callback, rather than
         only when sounds are initated, so the stereo field won't jump
 	around, but will rotate smoothly.  This one is important.
