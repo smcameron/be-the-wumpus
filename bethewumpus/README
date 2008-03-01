@@ -1,0 +1,37 @@
+
+HARDWARE REQUIREMENTS:
+
+Apart from a working stereo sound card,
+HEADPHONES ARE *HIGHLY* RECOMMENDED.
+
+You will also need a dual axis joystick, such as the 
+Logitech Dual Action 2 with Rumble.
+
+The rumble feature does not work, sorry to say.
+
+
+BUILDING:
+
+To build, just type "make".
+
+You will need libportaudio (http://www.portaudio.com/)
+and libsndfile (http://www.mega-nerd.com/libsndfile/)
+if you don't already have them on your system.
+
+You will need oggdec to decode the ogg files into
+wav files (vorbisutils package).
+
+You will need 80Mb of disk space for the 
+decoded wav files.
+
+You will need gtk-2.0 libs as well.  GTK could
+probably be dispensed with, as it is used mainly
+for debugging, and for the timer loop, but it would
+take a little bit of hacking on the code to get it there.
+
+
+ 
+
+
+
+

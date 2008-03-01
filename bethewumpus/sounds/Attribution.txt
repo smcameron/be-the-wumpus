@@ -1,0 +1,74 @@
+
+The sound files in here are released under 
+Creative Commons Sampling Plus 1.0 License.
+
+See: http://creativecommons.org/licenses/sampling+/1.0/
+
+You are free:
+
+    * To sample, mash-up, or otherwise creatively transform this work for
+      commercial or noncommercial purposes.  To perform, display, and
+      distribute copies of this whole work for noncommercial purposes (e.g.,
+    * file-sharing or noncommercial webcasting). 
+
+Under the following conditions:
+
+    * You must attribute the work in the manner specified by the author or
+      licensor (but not in any way that suggests that they endorse you or your
+      use of the work).  You may not use this work to advertise for or promote
+    * anything but the work you create from it.  For any reuse or distribution,
+    * you must make clear to others the license terms of this work. The best
+      way to do this is with a link to this web page. 
+
+----------------------------
+
+The file 32857_zimm_heartbeat_regular_trimmed.ogg is a sample from 
+http://freesound.iua.upf.edu/samplesViewSingle.php?id=32857
+aka "heartbeat regular.wav" by freesound user zimm:
+        By zimm (http://freesound.iua.upf.edu/usersViewSingle.php?id=122210)
+            heartbeat regular.wav (http://freesound.iua.upf.edu/samplesViewSingle.php?id=32857)
+
+The sounds listed below, are (c) 2008, Stephen M. Cameron.
+and released under the same Creative Commons Sampling Plus 1.0 License.
+
+	be_the_wumpus.ogg
+	breath2.ogg
+	drips2.ogg
+	fall_with_impact.ogg
+	fast_breath.ogg
+	hello.ogg
+	level_eight.ogg
+	level_five.ogg
+	level_four.ogg
+	level_nine.ogg
+	level_one.ogg
+	level_seven.ogg
+	level_six.ogg
+	level_ten.ogg
+	level_three.ogg
+	level_two.ogg
+	loud_splash1.ogg
+	medium_splash1.ogg
+	medium_splash2.ogg
+	medium_splash3.ogg
+	medium_splash4.ogg
+	medium_splash5.ogg
+	medium_splash6.ogg
+	medium_splash7.ogg
+	medium_splash8.ogg
+	oh_shit_oh_shit.ogg
+	rocks1.ogg
+	rocks2.ogg
+	rocks3.ogg
+	rocks4.ogg
+	rocks5.ogg
+	rocks6.ogg
+	rocks7.ogg
+	rocks8.ogg
+	running_water.ogg
+	scary_wumpus_music.ogg
+	surprise.ogg
+	wumpus_dines.ogg
+	wumpus_intro_music.ogg
+	wumpus_roar.ogg
+
