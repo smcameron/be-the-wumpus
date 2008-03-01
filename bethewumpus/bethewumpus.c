@@ -48,11 +48,11 @@
 
 #define BREATH_SLOT 1
 #define BREATH_SOUND 1
-#define NOMINAL_BREATH_VOL (0.2)
+#define NOMINAL_BREATH_VOL (0.1)
 
 #define HEARTBEAT_SLOT 2
 #define HEARTBEAT_SOUND 2
-#define NOMINAL_HEARTBEAT_VOL (0.1)
+#define NOMINAL_HEARTBEAT_VOL (0.05)
 
 #define DRIP_SLOT 3
 #define DRIP_SOUND 3
@@ -102,9 +102,9 @@
 #define LEVEL_NINE_SOUND 36 
 #define LEVEL_TEN_SOUND 37 
 
-int debugmode = 0;
-int water_x = SCREEN_WIDTH/2;
-int water_y = 0;
+int debugmode = 1;
+double water_x = SCREEN_WIDTH/2;
+double water_y = 0;
 int level = 0;
 
 struct level_struct {
@@ -130,12 +130,51 @@ struct sound_source {
 	int motion_sound_in_play;
 };
 
+struct sound_clip;
+typedef void (*sound_end_callback)(int which_slot);
+typedef void (*volume_adjust_function)(struct sound_clip *clip);
+
+#define LINEARFALLOFF 1
+#define SQRTFALLOFF 2
+#define NO_FALLOFF 3
+
+struct volume_adjusting_profile_t {
+	double *sourcex, *sourcey;
+	double *listenerx, *listenery, *listenerangle;
+	int fallofftype;
+	volume_adjust_function vaf;
+};
+
+struct volume_adjusting_profile_t heartbeat_vap;
+struct volume_adjusting_profile_t drip_vap;
+struct volume_adjusting_profile_t water_vap;
+struct volume_adjusting_profile_t music_vap;
+
+struct sound_clip {
+	int active;
+	int nsamples;
+	int pos;
+	double *sample;
+	double const_right_vol;
+	double const_left_vol;
+	double right_vol;
+	double left_vol;
+	sound_end_callback end_function;
+	struct volume_adjusting_profile_t *vap;
+} clip[NCLIPS];
+
+struct sound_clip audio_queue[MAX_CONCURRENT_SOUNDS];
+
+int nclips = 0;
+
+
 struct meal_t {
 	struct sound_source s;
 	double maxv;
 	int anxiety;
 	double destx, desty;
 	double v;
+	struct volume_adjusting_profile_t vap;
 };
 
 struct meal_t meal;
@@ -172,11 +211,22 @@ static inline int randomn(int n)
         return ((random() & 0x0000ffff) * n) >> 16;
 }
 
+void setup_volume_adjusting_profile(struct volume_adjusting_profile_t *vap, 
+		double *sx, double *sy, double *lx, double *ly, double *la,
+		int fallofftype, volume_adjust_function vaf)
+{
+	vap->sourcex = sx;
+	vap->sourcey = sy;
+	vap->listenerx = lx;
+	vap->listenery = ly;
+	vap->listenerangle = la;
+	vap->fallofftype = fallofftype;
+	vap->vaf = vaf;
+}
+
 /***********************************************************************/
 /* Beginning of AUDIO related code                                     */
 /***********************************************************************/
-#define LINEARFALLOFF 1
-#define SQRTFALLOFF 2
 
 void find_sound_adjust_factors(double x, double y, double angle, 
 	double sx, double sy, double *leftfactor, double *rightfactor, 
@@ -241,21 +291,23 @@ void find_sound_adjust_factors(double x, double y, double angle,
 	*rightfactor = *rightfactor * (1.0 - (0.5 * (aheaddist - behinddist)));
 }
 
-typedef void (*sound_end_callback)(int which_slot);
+void normal_volume_adjust_function(struct sound_clip *clip)
+{
+	struct volume_adjusting_profile_t *vap = clip->vap;
+	double left, right;
 
-struct sound_clip {
-	int active;
-	int nsamples;
-	int pos;
-	double *sample;
-	double right_vol;
-	double left_vol;
-	sound_end_callback end_function;
-} clip[NCLIPS];
+	find_sound_adjust_factors(*vap->listenerx, *vap->listenery,
+			*vap->listenerangle, *vap->sourcex, *vap->sourcey,
+			&left, &right, vap->fallofftype);
 
-struct sound_clip audio_queue[MAX_CONCURRENT_SOUNDS];
+	clip->left_vol = clip->const_left_vol * left;
+	clip->right_vol = clip->const_right_vol * right;
+}
 
-int nclips = 0;
+void constant_volume_adjust_function(struct sound_clip *clip)
+{
+	return;
+}
 
 int read_clip(int clipnum, char *filename)
 {
@@ -366,6 +418,13 @@ static int SoundCallback(const void *inputBuffer, void *outputBuffer,
 	float outputleft;
 	float outputright;
 
+	/* Adjust sound volumes */
+	for (i=0;i<NCLIPS;i++) {
+		if (!audio_queue[i].active)
+			continue;
+		if (audio_queue[i].vap != NULL)
+			audio_queue[i].vap->vaf(&audio_queue[i]);
+	}
 	for (i=0; i<framesPerBuffer; i++) {
 		outputleft = 0.0;
 		outputright = 0.0;
@@ -486,7 +545,8 @@ error:
 	return;
 }
 
-int add_sound(int which_sound, int which_slot, double left_vol, double right_vol, sound_end_callback);
+int add_sound(int which_sound, int which_slot, double left_vol, double right_vol, 
+	struct volume_adjusting_profile_t *vap, sound_end_callback end_function);
 
 void advance_level();
 void player_roar_sound_end_callback(int which_slot)
@@ -510,74 +570,54 @@ void meal_motion_sound_end_callback(int which_slot)
     
 void heartbeat_end_callback(int which_slot)
 {
-	double leftadjust, rightadjust;
-	/* When the water sound ends, add it back at the same volume. */
-	find_sound_adjust_factors(player.x, player.y, player.angle, 
-		meal.s.x, meal.s.y, &leftadjust, &rightadjust, LINEARFALLOFF);
 	add_sound(HEARTBEAT_SOUND, HEARTBEAT_SLOT, 
-		NOMINAL_HEARTBEAT_VOL * leftadjust, NOMINAL_HEARTBEAT_VOL *rightadjust,
-		heartbeat_end_callback);
+		NOMINAL_HEARTBEAT_VOL, NOMINAL_HEARTBEAT_VOL,
+		&heartbeat_vap, heartbeat_end_callback);
 }
 
 void scary_music_end_callback(int which_slot)
 {
-	/* When the water sound ends, add it back at the same volume. */
-	/* find_sound_adjust_factors(player.x, player.y, player.angle, 
-		drip.x, drip.y, &leftadjust, &rightadjust, SQRTFALLOFF); */
 	add_sound(SCARY_MUSIC_SOUND, SCARY_MUSIC_SLOT, 
 		NOMINAL_SCARY_MUSIC_VOL, NOMINAL_SCARY_MUSIC_VOL,
-		scary_music_end_callback);
+		NULL, scary_music_end_callback);
 }
 
 void drip_end_callback(int which_slot)
 {
-	double leftadjust, rightadjust;
-	/* When the water sound ends, add it back at the same volume. */
-	find_sound_adjust_factors(player.x, player.y, player.angle, 
-		drip.x, drip.y, &leftadjust, &rightadjust, SQRTFALLOFF);
 	add_sound(DRIP_SOUND, DRIP_SLOT, 
-		NOMINAL_DRIP_VOL * leftadjust, NOMINAL_DRIP_VOL *rightadjust,
-		drip_end_callback);
+		NOMINAL_DRIP_VOL, NOMINAL_DRIP_VOL,
+		&drip_vap, drip_end_callback);
 }
 
 void breath_end_callback(int which_slot)
 {
-	double leftadjust, rightadjust;
-	/* When the water sound ends, add it back at the same volume. */
-	find_sound_adjust_factors(player.x, player.y, player.angle, 
-		meal.s.x, meal.s.y, &leftadjust, &rightadjust, SQRTFALLOFF);
-
 	if (meal.anxiety > 3) /* VERY anxious */
 		add_sound(BREATH_SOUND, BREATH_SLOT, 
-			NOMINAL_BREATH_VOL * leftadjust, NOMINAL_BREATH_VOL *rightadjust,
-			breath_end_callback);
+			NOMINAL_BREATH_VOL, NOMINAL_BREATH_VOL,
+			&meal.vap, breath_end_callback);
 	else if (meal.anxiety > 2) /* pretty damned anxious */
 		add_sound(BREATH_SOUND, BREATH_SLOT, 
-			NOMINAL_BREATH_VOL * leftadjust, NOMINAL_BREATH_VOL *rightadjust,
-			breath_end_callback);
+			NOMINAL_BREATH_VOL, NOMINAL_BREATH_VOL,
+			&meal.vap, breath_end_callback);
 	else if (meal.anxiety > 1) /* anxious */
 		add_sound(BREATH_SOUND, BREATH_SLOT, 
-			NOMINAL_BREATH_VOL * leftadjust, NOMINAL_BREATH_VOL *rightadjust,
-			breath_end_callback);
+			NOMINAL_BREATH_VOL, NOMINAL_BREATH_VOL,
+			&meal.vap, breath_end_callback);
 	else if (meal.anxiety > 0) /* starting to get anxious */
 		add_sound(BREATH_SOUND, BREATH_SLOT, 
-			NOMINAL_BREATH_VOL * leftadjust, NOMINAL_BREATH_VOL *rightadjust,
-			breath_end_callback);
+			NOMINAL_BREATH_VOL, NOMINAL_BREATH_VOL,
+			&meal.vap, breath_end_callback);
 	else  	/* as calm as can be when in a dark cave with a hungry wumpus */
 		add_sound(BREATH_SOUND, BREATH_SLOT, 
-			NOMINAL_BREATH_VOL * leftadjust, NOMINAL_BREATH_VOL *rightadjust,
-			breath_end_callback);
+			NOMINAL_BREATH_VOL, NOMINAL_BREATH_VOL,
+			&meal.vap, breath_end_callback);
 }
 
 void water_end_callback(int which_slot)
 {
-	double leftadjust, rightadjust;
-	/* When the water sound ends, add it back at the same volume. */
-	find_sound_adjust_factors(player.x, player.y, player.angle, 
-		water_x, water_y, &leftadjust, &rightadjust, SQRTFALLOFF);
 	add_sound(RUNNING_WATER, WATER_SLOT, 
-		NOMINAL_WATER_VOL * leftadjust, NOMINAL_WATER_VOL *rightadjust,
-		water_end_callback);
+		NOMINAL_WATER_VOL, NOMINAL_WATER_VOL,
+		&water_vap, water_end_callback);
 }
 
 void start_game_callback(int which_slot) 
@@ -596,7 +636,6 @@ void add_falling_meal(int which_slot)
 {
 	
 	double dist1r, dist1p, dist2r;
-	double leftadjust, rightadjust;
 
 	meal.s.x = 10000;
 	meal.s.y = 10000;
@@ -617,24 +656,24 @@ void add_falling_meal(int which_slot)
 		dist2r > (SCREEN_HEIGHT/2) - 10 ||
 		dist1p < (SCREEN_HEIGHT/3));
 
-	/* When the water sound ends, add it back at the same volume. */
-	find_sound_adjust_factors(player.x, player.y, player.angle, 
-		meal.s.x, meal.s.y, &leftadjust, &rightadjust, LINEARFALLOFF);
-	add_sound(FALL_WITH_IMPACT_SOUND, ANY_SLOT, 2*leftadjust, 2*rightadjust, start_game_callback);
-	add_sound(RUNNING_WATER, WATER_SLOT, 0.07, 0.01, water_end_callback);
+	/* find_sound_adjust_factors(player.x, player.y, player.angle, 
+		meal.s.x, meal.s.y, &leftadjust, &rightadjust, LINEARFALLOFF); */
+	add_sound(FALL_WITH_IMPACT_SOUND, ANY_SLOT, 1.0, 1.0, 
+			&meal.vap, start_game_callback);
+	water_end_callback(WATER_SLOT);
 	drip_end_callback(DRIP_SLOT);
 	scary_music_end_callback(SCARY_MUSIC_SLOT);
 }
 
 void level_callback(int which_slot)
 {
-	add_sound(LEVEL_ONE_SOUND + level, ANY_SLOT, 0.1, 0.1, add_falling_meal);
+	add_sound(LEVEL_ONE_SOUND + level, ANY_SLOT, 0.1, 0.1, NULL, add_falling_meal);
 }
 
 void start_intro_music()
 {
-	add_sound(INTRO_MUSIC_SOUND, ANY_SLOT, 0.1, 0.1, level_callback);
-	add_sound(BETHEWUMPUS_SOUND, ANY_SLOT, 0.1, 0.1, NULL);
+	add_sound(INTRO_MUSIC_SOUND, ANY_SLOT, 0.1, 0.1, NULL, level_callback);
+	add_sound(BETHEWUMPUS_SOUND, ANY_SLOT, 0.1, 0.1, NULL, NULL);
 }
 
 void adjust_volume(int which_slot, double left_vol, double right_vol)
@@ -643,7 +682,8 @@ void adjust_volume(int which_slot, double left_vol, double right_vol)
 	audio_queue[which_slot].right_vol = right_vol;
 }
 
-int add_sound(int which_sound, int which_slot, double left_vol, double right_vol, sound_end_callback end_function)
+int add_sound(int which_sound, int which_slot, double left_vol, double right_vol, 
+	struct volume_adjusting_profile_t *vap, sound_end_callback end_function)
 {
 	int i;
 
@@ -659,7 +699,12 @@ int add_sound(int which_sound, int which_slot, double left_vol, double right_vol
 		audio_queue[which_slot].active = 1;
 		audio_queue[which_slot].left_vol = left_vol;
 		audio_queue[which_slot].right_vol = right_vol;
+		audio_queue[which_slot].const_left_vol = left_vol;
+		audio_queue[which_slot].const_right_vol = right_vol;
 		audio_queue[which_slot].end_function = end_function;
+		audio_queue[which_slot].vap = vap;
+		if (vap != NULL && vap->vaf != NULL) 
+			vap->vaf(&audio_queue[which_slot]);
 		return which_slot;
 	}
 	for (i=MAX_CONCURRENT_SOUNDS-1;i>=0;i--) {
@@ -670,7 +715,12 @@ int add_sound(int which_sound, int which_slot, double left_vol, double right_vol
 			audio_queue[i].active = 1;
 			audio_queue[i].left_vol = left_vol;
 			audio_queue[i].right_vol = right_vol;
+			audio_queue[i].const_left_vol = left_vol;
+			audio_queue[i].const_right_vol = right_vol;
 			audio_queue[i].end_function = end_function;
+			audio_queue[i].vap = vap;
+			if (vap != NULL && vap->vaf != NULL) 
+				vap->vaf(&audio_queue[i]);
 			break;
 		}
 	}
@@ -808,14 +858,14 @@ void player_move()
 			if (in_the_water(player.x, player.y)) {
 				if (v > 0.5) {
 					player.motion_sound_in_play = 1;
-					add_sound(MED_SPLASH1 + (timer % 8), ANY_SLOT, 0.3 * (v/3.0), 0.3 * (v/3.0), 
-						player_motion_sound_end_callback);
+					add_sound(MED_SPLASH1 + (randomn(8)), ANY_SLOT, 0.3 * (v/3.0), 0.3 * (v/3.0), 
+						NULL, player_motion_sound_end_callback);
 				}
 			} else {
 				if (v > 0.5) {
 					player.motion_sound_in_play = 1;
-					add_sound(ROCKS1 + (timer % 8), ANY_SLOT, 0.3 * (v/3.0), 0.3 * (v/3.0), 
-						player_motion_sound_end_callback);
+					add_sound(ROCKS1 + (randomn(8)), ANY_SLOT, 0.3 * (v/3.0), 0.3 * (v/3.0), 
+						NULL, player_motion_sound_end_callback);
 				}
 			}
 		}
@@ -839,10 +889,12 @@ void player_move()
 			ty = player.y - sin(player.angle) * 15.0 * (double) jse.stick2_y / 32767.0;
 			dist = sqrt((meal.s.x - tx) * (meal.s.x - tx) + (meal.s.y - ty) * (meal.s.y - ty));
 			if (dist < MEALDIST) {
-				add_sound(DINE, ANY_SLOT, 1.0, 1.0, player_roar_sound_end_callback);
+				add_sound(DINE, ANY_SLOT, 1.0, 1.0, 
+					NULL, player_roar_sound_end_callback);
 				player.won_round = 1;
 			} else {
-				add_sound(ROAR, ANY_SLOT, 1.0, 1.0, player_roar_sound_end_callback);
+				add_sound(ROAR, ANY_SLOT, 1.0, 1.0, 
+					NULL, player_roar_sound_end_callback);
 				player.won_round = 0;
 			}
 		}
@@ -851,18 +903,6 @@ void player_move()
 	
 
 	
-}
-
-void adjust_sound_volumes()
-{
-	double rightadjust, leftadjust;
-
-	find_sound_adjust_factors(player.x, player.y, player.angle, 
-		water_x, water_y, &leftadjust, &rightadjust, SQRTFALLOFF);
-
-	adjust_volume(WATER_SLOT, 
-		NOMINAL_WATER_VOL * leftadjust,
-		NOMINAL_WATER_VOL * rightadjust);
 }
 
 int on_board(double x, double y)
@@ -950,22 +990,20 @@ void meal_move()
 
 	/* see if the meal is making movement noise... */
 	if (!meal.s.motion_sound_in_play) {
-		double v, leftadjust, rightadjust;
+		double v;
 		v = sqrt((vx*vx) + (vy*vy));
 
 		if (v > 0.3) {
-			find_sound_adjust_factors(player.x, player.y, player.angle, 
-				meal.s.x, meal.s.y, &leftadjust, &rightadjust, LINEARFALLOFF);
 			if (in_the_water(meal.s.x, meal.s.y)) {
 				meal.s.motion_sound_in_play = 1;	
-				add_sound(MED_SPLASH1 + (timer % 8), ANY_SLOT, 
-					leftadjust * v * 2, rightadjust * v * 2, 
-					meal_motion_sound_end_callback);
+				add_sound(MED_SPLASH1 + (randomn(8)), ANY_SLOT, 
+					v * 0.2, v * 0.2, 
+					&meal.vap, meal_motion_sound_end_callback);
 			} else {
 				meal.s.motion_sound_in_play = 1;	
-				add_sound(ROCKS1 + (timer % 8), ANY_SLOT, 
-					leftadjust * v * 2, rightadjust * v * 2, 
-					meal_motion_sound_end_callback);
+				add_sound(ROCKS1 + (randomn(8)), ANY_SLOT, 
+					v * 0.2, v * 0.2, 
+					&meal.vap, meal_motion_sound_end_callback);
 			}
 		}
 	}
@@ -978,7 +1016,6 @@ gint advance_game(gpointer data)
 {
 	player_move();
 	meal_move();
-	adjust_sound_volumes();
 	gtk_widget_queue_draw(main_da);
 	timer++;
 	// printf("Advance game called, timer = %d.\n", timer);
@@ -1069,6 +1106,19 @@ int main( int   argc,
 	meal.maxv = 1.0;
 	meal.v = 0.5;
 	meal.anxiety = 0;
+	setup_volume_adjusting_profile(&meal.vap, &meal.s.x, &meal.s.y,
+		&player.x, &player.y, &player.angle, SQRTFALLOFF, 
+		normal_volume_adjust_function);
+	setup_volume_adjusting_profile(&heartbeat_vap, &meal.s.x, &meal.s.y,
+		&player.x, &player.y, &player.angle, LINEARFALLOFF, 
+		normal_volume_adjust_function);
+	setup_volume_adjusting_profile(&drip_vap, &drip.x, &drip.y,
+		&player.x, &player.y, &player.angle, SQRTFALLOFF, 
+		normal_volume_adjust_function);
+	setup_volume_adjusting_profile(&water_vap, &water_x, &water_y,
+		&player.x, &player.y, &player.angle, SQRTFALLOFF, 
+		normal_volume_adjust_function);
+		
 	level = -1;
 	advance_level();
 
