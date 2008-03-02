@@ -39,7 +39,13 @@ all:	32857_zimm_heartbeat_regular_trimmed.wav \
 	scary_wumpus_music.wav \
 	wumpus_dines.wav \
 	wumpus_intro_music.wav \
-	wumpus_roar.wav
+	wumpus_roar.wav \
+	oh_shit_oh_shit.wav \
+	hello.wav \
+	fast_breath1.wav \
+	fast_breath2.wav \
+	huuuuuh.wav \
+	mild_surprise_breath.wav
 
 clean:
 	/bin/rm -f *.wav
