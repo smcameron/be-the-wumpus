@@ -38,7 +38,7 @@
 
 #define SAMPLE_RATE   (44100)
 #define FRAMES_PER_BUFFER  (1024)
-#define NCLIPS 40
+#define NCLIPS 45
 #define MAX_CONCURRENT_SOUNDS NCLIPS 
 #define ANY_SLOT -1
 #define MUSIC_SLOT 1
@@ -101,6 +101,12 @@
 #define LEVEL_EIGHT_SOUND 35 
 #define LEVEL_NINE_SOUND 36 
 #define LEVEL_TEN_SOUND 37 
+#define FAST_BREATH1 38
+#define FAST_BREATH2 39
+#define MILD_SURPRISE 40
+#define SURPRISE 41
+#define HELLO 42
+#define OHSHIT 43
 
 int debugmode = 0;
 double water_x = SCREEN_WIDTH/2;
@@ -406,6 +412,12 @@ int init_clips()
 	read_clip(LEVEL_EIGHT_SOUND, "sounds/level_eight.wav");
 	read_clip(LEVEL_NINE_SOUND, "sounds/level_nine.wav");
 	read_clip(LEVEL_TEN_SOUND, "sounds/level_ten.wav");
+	read_clip(FAST_BREATH1, "sounds/fast_breath1.wav");
+	read_clip(FAST_BREATH2, "sounds/fast_breath2.wav");
+	read_clip(MILD_SURPRISE, "sounds/mild_surprise_breath.wav");
+	read_clip(SURPRISE, "sounds/huuuuuh.wav");
+	read_clip(HELLO, "sounds/hello.wav");
+	read_clip(OHSHIT, "sounds/oh_shit_oh_shit.wav");
 	printf("\n");
 	return 0;
 }
@@ -598,26 +610,46 @@ void drip_end_callback(int which_slot)
 
 void breath_end_callback(int which_slot)
 {
-	if (meal.anxiety > 3) /* VERY anxious */
+	if (meal.anxiety > 8) { /* VERY anxious */
+		meal.anxiety = 4;
+		add_sound(SURPRISE, BREATH_SLOT, 
+			NOMINAL_BREATH_VOL, NOMINAL_BREATH_VOL,
+			&meal.vap, breath_end_callback);
+	} else if (meal.anxiety > 5) {/* pretty damned anxious */
+		meal.anxiety = 4;
+		add_sound(MILD_SURPRISE, BREATH_SLOT, 
+			NOMINAL_BREATH_VOL, NOMINAL_BREATH_VOL,
+			&meal.vap, breath_end_callback);
+	} else if (meal.anxiety > 3) {/* anxious */
+		int n;
+		if (randomn(100) < 50)
+			meal.anxiety = 3;
+		if (randomn(100) < 10)
+			meal.anxiety = 2;
+		n = randomn(100);
+		if (n < 10)
+			add_sound(OHSHIT, BREATH_SLOT, 
+				NOMINAL_BREATH_VOL, NOMINAL_BREATH_VOL,
+				&meal.vap, breath_end_callback);
+		else if (n < 20)
+			add_sound(HELLO, BREATH_SLOT, 
+				NOMINAL_BREATH_VOL, NOMINAL_BREATH_VOL,
+				&meal.vap, breath_end_callback);
+		else
+			add_sound(FAST_BREATH2, BREATH_SLOT, 
+				NOMINAL_BREATH_VOL, NOMINAL_BREATH_VOL,
+				&meal.vap, breath_end_callback);
+	} else if (meal.anxiety > 2) {/* starting to get anxious */
+		if (randomn(100) < 10)
+			meal.anxiety = 2;
+		add_sound(FAST_BREATH1, BREATH_SLOT, 
+			NOMINAL_BREATH_VOL, NOMINAL_BREATH_VOL,
+			&meal.vap, breath_end_callback);
+	} else {  	/* as calm as can be when in a dark cave with a hungry wumpus */
 		add_sound(BREATH_SOUND, BREATH_SLOT, 
 			NOMINAL_BREATH_VOL, NOMINAL_BREATH_VOL,
 			&meal.vap, breath_end_callback);
-	else if (meal.anxiety > 2) /* pretty damned anxious */
-		add_sound(BREATH_SOUND, BREATH_SLOT, 
-			NOMINAL_BREATH_VOL, NOMINAL_BREATH_VOL,
-			&meal.vap, breath_end_callback);
-	else if (meal.anxiety > 1) /* anxious */
-		add_sound(BREATH_SOUND, BREATH_SLOT, 
-			NOMINAL_BREATH_VOL, NOMINAL_BREATH_VOL,
-			&meal.vap, breath_end_callback);
-	else if (meal.anxiety > 0) /* starting to get anxious */
-		add_sound(BREATH_SOUND, BREATH_SLOT, 
-			NOMINAL_BREATH_VOL, NOMINAL_BREATH_VOL,
-			&meal.vap, breath_end_callback);
-	else  	/* as calm as can be when in a dark cave with a hungry wumpus */
-		add_sound(BREATH_SOUND, BREATH_SLOT, 
-			NOMINAL_BREATH_VOL, NOMINAL_BREATH_VOL,
-			&meal.vap, breath_end_callback);
+	}
 }
 
 void water_end_callback(int which_slot)
@@ -859,20 +891,43 @@ void player_move()
 
 		/* See if the player has made movement noise */
 		if (!player.motion_sound_in_play) {
+			double dist;
+			dist = sqrt((meal.s.x - player.x) * (meal.s.x - player.x) + 
+				(meal.s.y - player.y) * (meal.s.y - player.y));
 			diffx = player.x - oldx;
 			diffy = player.y - oldy; 
 			v = sqrt(diffx*diffx + diffy*diffy);
 			if (in_the_water(player.x, player.y)) {
-				if (v > 0.5) {
+				if (v > 0.8) {
 					player.motion_sound_in_play = 1;
 					add_sound(MED_SPLASH1 + (randomn(8)), ANY_SLOT, 0.3 * (v/3.0), 0.3 * (v/3.0), 
 						NULL, player_motion_sound_end_callback);
+					if (dist < 15)
+						meal.anxiety = 10;
+					else if (dist < 30)
+						meal.anxiety = 8;
+					else if (dist < 60)
+						meal.anxiety = 5;
+					else if (dist < 120)
+						meal.anxiety = 3;
+					else if (dist < 200)
+						meal.anxiety = 2;
 				}
 			} else {
-				if (v > 0.5) {
+				if (v > 0.8) {
 					player.motion_sound_in_play = 1;
 					add_sound(ROCKS1 + (randomn(8)), ANY_SLOT, 0.3 * (v/3.0), 0.3 * (v/3.0), 
 						NULL, player_motion_sound_end_callback);
+					if (dist < 15)
+						meal.anxiety = 10;
+					else if (dist < 30)
+						meal.anxiety = 8;
+					else if (dist < 60)
+						meal.anxiety = 5;
+					else if (dist < 120)
+						meal.anxiety = 3;
+					else if (dist < 200)
+						meal.anxiety = 2;
 				}
 			}
 		}
@@ -903,6 +958,7 @@ void player_move()
 				add_sound(ROAR, ANY_SLOT, 1.0, 1.0, 
 					NULL, player_roar_sound_end_callback);
 				player.won_round = 0;
+				meal.anxiety = 10;
 			}
 		}
 	}
@@ -953,7 +1009,7 @@ void meal_move()
 	if (abs(dx) < maxvx)
 		maxvx = abs(dx);
 
-	if (abs(dy) < 0.3 && abs(dx) < 0.3) {
+	if ((abs(dy) < 0.3 && abs(dx) < 0.3) || meal.anxiety == 10) {
 		/* reached destination, set new dest off board (will trigger above code next time) */
 		meal.destx = 1000;
 		meal.desty = 1000;
