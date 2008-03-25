@@ -1,20 +1,20 @@
 /*
     (C) Copyright 2008, Stephen M. Cameron.
 
-    This file is part of Gneutronica.
+    This file is part of bethewumpus.
 
-    Gneutronica is free software; you can redistribute it and/or modify
+    Bethewumpus is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 
-    Gneutronica is distributed in the hope that it will be useful,
+    Bethewumpus is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with Gneutronica; if not, write to the Free Software
+    along with Bethewumpus; if not, write to the Free Software
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 */
@@ -1102,6 +1102,7 @@ static void destroy( GtkWidget *widget,
 
 static struct option btw_opts[] = {
 	{ "sounddevice", 1, 0, 0 },
+	{ "version", 0, 0, 1 },
 };
 
 int main( int   argc,
@@ -1128,6 +1129,11 @@ int main( int   argc,
 					sound_device = -1;
 				}
 				break;
+			case 1:
+				printf("Be The Wumpus, v. 0.02\n");
+				printf("(c) Copyright Stephen M. Cameron, 2008\n");
+				printf("See the file COPYING for terms of redistribution.\n");
+				exit(0);
 			default:
 				break;
 		}
