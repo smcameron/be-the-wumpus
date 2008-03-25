@@ -28,6 +28,9 @@
 #include <portaudio.h>
 #include <sndfile.h>
 
+#define GNU_SOURCE
+#include <getopt.h>
+
 #include "joystick.h"
 
 #define PI (3.1415927)
@@ -108,6 +111,7 @@
 #define HELLO 42
 #define OHSHIT 43
 
+int sound_device = -1;
 int debugmode = 0;
 double water_x = SCREEN_WIDTH/2;
 double water_y = 0;
@@ -511,6 +515,10 @@ int initialize_portaudio()
 		goto error;
     
 	outparams.device = Pa_GetDefaultOutputDevice();  /* default output device */
+
+	if (sound_device != -1)
+		outparams.device = sound_device;
+
 	outparams.channelCount = 2;                      /* stereo output */
 	outparams.sampleFormat = paFloat32;              /* 32 bit floating point output */
 	outparams.suggestedLatency = 
@@ -1092,6 +1100,10 @@ static void destroy( GtkWidget *widget,
     gtk_main_quit ();
 }
 
+static struct option btw_opts[] = {
+	{ "sounddevice", 1, 0, 0 },
+};
+
 int main( int   argc,
           char *argv[] )
 {
@@ -1101,6 +1113,25 @@ int main( int   argc,
 	GdkColor whitecolor;
 
 	struct timeval time;
+
+	while (1) {
+		int rc, n;
+		rc = getopt_long_only(argc, argv, "", btw_opts, NULL);
+		if (rc == -1)
+			break;
+		switch (rc) {
+			case 0: /* --sounddevice option */
+				n = sscanf(optarg, "%d", &sound_device);
+				if (n != 1) {
+					fprintf(stderr, "bethewumpus: Bad sound device specified:"
+						" '%s', using default.\n", optarg);
+					sound_device = -1;
+				}
+				break;
+			default:
+				break;
+		}
+	}
 
 	gettimeofday(&time, NULL);
 	srand(time.tv_usec);
