@@ -27,7 +27,7 @@ bethewumpus:	bethewumpus.c joystick.o Makefile
 
 tarball:
 	mkdir -p d/bethewumpus-${VERSION}/sounds
-	cp Makefile bethewumpus.c joystick.h joystick.c README AUTHORS \
+	cp Makefile bethewumpus.c bethewumpus.6 joystick.h joystick.c README AUTHORS \
 		COPYING TODO d/bethewumpus-${VERSION}
 	cp sounds/*.ogg d/bethewumpus-${VERSION}/sounds
 	cp sounds/Attribution.txt d/bethewumpus-${VERSION}/sounds
