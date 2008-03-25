@@ -116,6 +116,8 @@ int debugmode = 0;
 double water_x = SCREEN_WIDTH/2;
 double water_y = 0;
 int level = 0;
+int intro_music_slot = -1;
+int Be_The_Wumpus_slot = -1;
 
 struct level_struct {
 	double maxv;
@@ -719,8 +721,8 @@ void level_callback(int which_slot)
 
 void start_intro_music()
 {
-	add_sound(INTRO_MUSIC_SOUND, ANY_SLOT, 0.1, 0.1, NULL, level_callback);
-	add_sound(BETHEWUMPUS_SOUND, ANY_SLOT, 0.1, 0.1, NULL, NULL);
+	intro_music_slot = add_sound(INTRO_MUSIC_SOUND, ANY_SLOT, 0.1, 0.1, NULL, level_callback);
+	Be_The_Wumpus_slot = add_sound(BETHEWUMPUS_SOUND, ANY_SLOT, 0.1, 0.1, NULL, NULL);
 }
 
 void adjust_volume(int which_slot, double left_vol, double right_vol)
@@ -870,7 +872,7 @@ int in_the_water(double x, double y);
 struct wwvi_js_event jse;
 void player_move()
 {
-	int rc;
+	int rc, i;
 	double radius, oldx, oldy, dx, dy;
 	double diffx, diffy, v;
 
@@ -971,9 +973,20 @@ void player_move()
 		}
 	}
 
-	
+	if (intro_music_slot == -1)  /* if intro music is not playing... we're done. */
+		return;
 
-	
+	/* intro music is playing... allow player to skip it by pressing a button. */
+	for (i=0;i<10;i++) {
+		if (jse.button[i]) {
+			cancel_sound(intro_music_slot);
+			intro_music_slot = -1;
+			if (Be_The_Wumpus_slot != -1) 
+				cancel_sound(Be_The_Wumpus_slot);
+			Be_The_Wumpus_slot = -1;
+			level_callback(-1);
+		}
+	}
 }
 
 int on_board(double x, double y)
