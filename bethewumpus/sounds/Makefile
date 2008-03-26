@@ -45,7 +45,9 @@ all:	32857_zimm_heartbeat_regular_trimmed.wav \
 	fast_breath1.wav \
 	fast_breath2.wav \
 	huuuuuh.wav \
-	mild_surprise_breath.wav
+	mild_surprise_breath.wav \
+	arrow_clatter.wav \
+	arrow_whoosh.wav
 
 clean:
 	/bin/rm -f *.wav
