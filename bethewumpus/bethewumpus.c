@@ -41,7 +41,7 @@
 
 #define SAMPLE_RATE   (44100)
 #define FRAMES_PER_BUFFER  (1024)
-#define NCLIPS 45
+#define NCLIPS 46
 #define MAX_CONCURRENT_SOUNDS NCLIPS 
 #define ANY_SLOT -1
 #define MUSIC_SLOT 1
@@ -110,6 +110,8 @@
 #define SURPRISE 41
 #define HELLO 42
 #define OHSHIT 43
+#define ARROW_CLATTER 44
+#define ARROW_WHOOSH 45
 
 int sound_device = -1;
 int debugmode = 0;
@@ -186,11 +188,32 @@ struct meal_t {
 	int anxiety;
 	double destx, desty;
 	double v;
+	int n_arrows;
+#define INITIAL_N_ARROWS 0
+#define ARROW_FIRE_CHANCE 30
 	struct volume_adjusting_profile_t vap;
 };
 
 struct meal_t meal;
 struct sound_source drip;
+
+struct arrow_t {
+	struct sound_source s;
+	double vx, vy;
+	double lastx, lasty;
+	int state;
+#define ARROW_STATE_QUIVERED 0
+#define ARROW_STATE_IN_FLIGHT 1
+#define ARROW_STATE_BOUNCING 2
+#define ARROW_STATE_AT_REST 3
+	int sound_playing;
+	int sound_slot;
+	struct volume_adjusting_profile_t vap;
+#define ARROW_HIT_DIST 5
+#define ARROW_MAX_VELOCITY 5
+};
+
+struct arrow_t arrow;
 
 gint timer_tag;
 GtkWidget *main_da;
@@ -424,6 +447,8 @@ int init_clips()
 	read_clip(SURPRISE, "sounds/huuuuuh.wav");
 	read_clip(HELLO, "sounds/hello.wav");
 	read_clip(OHSHIT, "sounds/oh_shit_oh_shit.wav");
+	read_clip(ARROW_CLATTER, "sounds/arrow_clatter.wav");
+	read_clip(ARROW_WHOOSH, "sounds/arrow_whoosh.wav");
 	printf("\n");
 	return 0;
 }
@@ -585,7 +610,18 @@ void player_roar_sound_end_callback(int which_slot)
 		advance_level();
 	player.won_round = 0;
 }
-    
+   
+void arrow_whoosh_end_callback(int which_slot)
+{
+	arrow.state = ARROW_STATE_BOUNCING;
+	arrow.sound_playing = 0;
+} 
+
+void arrow_clatter_end_callback(int which_slot)
+{
+	arrow.state = ARROW_STATE_QUIVERED;
+	arrow.sound_playing = 0;
+} 
 
 void player_motion_sound_end_callback(int which_slot)
 {
@@ -618,6 +654,48 @@ void drip_end_callback(int which_slot)
 		&drip_vap, drip_end_callback);
 }
 
+void try_firing_arrow() /* called by breath end callback */
+{
+	double dx, dy;
+
+	if (meal.n_arrows <= 0) /* no arrows left, bail */
+		return;
+
+	if (arrow.state != ARROW_STATE_QUIVERED) /* arrow is not in quiver, bail. */
+		return;
+
+	if (randomn(100) > ARROW_FIRE_CHANCE+level) /* not this time, bail. */
+		return;
+
+	/* fire the arrow... */
+	meal.n_arrows--;
+	arrow.s.x = meal.s.x;
+	arrow.s.y = meal.s.y;
+
+	dx = player.x - meal.s.x;
+	dy = player.y - meal.s.y;
+
+	if (abs(dx) >= abs(dy)) {
+		if (dx < 0)
+			arrow.vx = - ARROW_MAX_VELOCITY;
+		else
+			arrow.vx = ARROW_MAX_VELOCITY;
+		arrow.vy = dy * ARROW_MAX_VELOCITY/abs(dx);
+	} else { /* dy > dx */ 
+		if (dy < 0)
+			arrow.vy = - ARROW_MAX_VELOCITY;
+		else
+			arrow.vy = ARROW_MAX_VELOCITY;
+		arrow.vx = dx * ARROW_MAX_VELOCITY/abs(dy);
+	}
+
+	arrow.vx += (randomn(2*meal.anxiety+1)-meal.anxiety);
+	arrow.vy += (randomn(2*meal.anxiety+1)-meal.anxiety);
+	
+	arrow.state = ARROW_STATE_IN_FLIGHT;
+	arrow.sound_playing = 0; /* should already be so */
+}
+
 void breath_end_callback(int which_slot)
 {
 	if (meal.anxiety > 8) { /* VERY anxious */
@@ -630,6 +708,7 @@ void breath_end_callback(int which_slot)
 		add_sound(MILD_SURPRISE, BREATH_SLOT, 
 			NOMINAL_BREATH_VOL, NOMINAL_BREATH_VOL,
 			&meal.vap, breath_end_callback);
+		try_firing_arrow();
 	} else if (meal.anxiety > 3) {/* anxious */
 		int n;
 		if (randomn(100) < 50)
@@ -649,12 +728,14 @@ void breath_end_callback(int which_slot)
 			add_sound(FAST_BREATH2, BREATH_SLOT, 
 				NOMINAL_BREATH_VOL, NOMINAL_BREATH_VOL,
 				&meal.vap, breath_end_callback);
+		try_firing_arrow();
 	} else if (meal.anxiety > 2) {/* starting to get anxious */
 		if (randomn(100) < 10)
 			meal.anxiety = 2;
 		add_sound(FAST_BREATH1, BREATH_SLOT, 
 			NOMINAL_BREATH_VOL, NOMINAL_BREATH_VOL,
 			&meal.vap, breath_end_callback);
+		try_firing_arrow();
 	} else {  	/* as calm as can be when in a dark cave with a hungry wumpus */
 		add_sound(BREATH_SOUND, BREATH_SLOT, 
 			NOMINAL_BREATH_VOL, NOMINAL_BREATH_VOL,
@@ -821,6 +902,15 @@ void player_draw(GtkWidget *w)
 	gdk_draw_line(w->window, gc, player.x, player.y, x2, y2);
 }
 
+void arrow_draw(GtkWidget *w)
+{
+	if (arrow.state != ARROW_STATE_IN_FLIGHT && arrow.state != ARROW_STATE_BOUNCING)
+		return;
+
+	gdk_draw_line(w->window, gc, arrow.s.x, arrow.s.y, arrow.lastx, arrow.lasty);
+}
+
+
 void meal_draw(GtkWidget *w)
 {
 	gdk_draw_line(w->window, gc, meal.s.x-3, meal.s.y-3, meal.s.x+3, meal.s.y+3);
@@ -846,6 +936,7 @@ static int main_da_expose(GtkWidget *w, GdkEvent *event, gpointer p)
 	}
 	player_draw(w);
 	meal_draw(w);
+	arrow_draw(w);
 	return 0;
 }
 
@@ -860,6 +951,7 @@ void advance_level()
 	meal.maxv = leveldata[level].maxv; 
 	meal.v = leveldata[level].normalv;
 	meal.anxiety = 0;
+	meal.n_arrows = INITIAL_N_ARROWS + level * 2;
 
 	if (level == 0) {
 		start_intro_music();	   
@@ -1003,6 +1095,65 @@ int in_the_water(double x, double y)
 	return (x > (3.0 * SCREEN_WIDTH/4.0) || y < (SCREEN_HEIGHT/4.0));
 }
 
+void arrow_move(struct arrow_t *arrow)
+{
+	double dist2;
+
+	switch (arrow->state) {
+		case ARROW_STATE_QUIVERED:
+		case ARROW_STATE_AT_REST:
+			return;
+		case ARROW_STATE_IN_FLIGHT:
+			if (arrow->sound_playing == 0) {
+				arrow->sound_slot = add_sound(ARROW_WHOOSH, ANY_SLOT, 1.0, 1.0, 
+					&arrow->vap, arrow_whoosh_end_callback);
+				arrow->sound_playing = 1;
+			}
+			arrow->lastx = arrow->s.x;
+			arrow->lasty = arrow->s.y;
+			arrow->s.x += arrow->vx;
+			arrow->s.y += arrow->vy;
+
+			/* hit the wall? */
+			if (!on_board(arrow->s.x, arrow->s.y)) {
+				arrow->s.x = arrow->lastx;
+				arrow->s.y = arrow->lasty;
+				arrow->vx = 0;
+				arrow->vy = 0;
+				if (arrow->sound_playing) {
+					cancel_sound(arrow->sound_slot);
+				}
+				arrow->sound_playing = 1;
+				arrow->sound_slot = add_sound(ARROW_CLATTER, ANY_SLOT,
+					0.3, 0.3, &arrow->vap, arrow_clatter_end_callback);
+				arrow->state = ARROW_STATE_BOUNCING;
+			}
+
+			/* See if the wumpus is hit... */
+			dist2 =	(arrow->s.x - player.x) * (arrow->s.x - player.x) + 
+				(arrow->s.y - player.y) * (arrow->s.y - player.y); 
+
+			if (dist2 < (ARROW_HIT_DIST * ARROW_HIT_DIST)) {
+				printf("Arrow hit the wumpus!\n");
+				if (arrow->sound_playing)
+					cancel_sound(arrow->sound_slot);
+			}
+
+			break;
+		case ARROW_STATE_BOUNCING:
+			if (arrow->sound_playing == 0) {
+				arrow->sound_slot = add_sound(ARROW_CLATTER, ANY_SLOT, 1.0, 1.0, 
+					&arrow->vap, arrow_clatter_end_callback);
+				arrow->vx = 0;
+				arrow->vy = 0;
+				arrow->sound_playing = 1;
+			}
+			break;
+		default:
+			printf("Unknown arrow state %d\n", arrow->state);
+	}
+}
+
 void meal_move()
 {
 	double dx, dy, vx, vy;
@@ -1100,6 +1251,7 @@ gint advance_game(gpointer data)
 {
 	player_move();
 	meal_move();
+	arrow_move(&arrow);
 	gtk_widget_queue_draw(main_da);
 	timer++;
 	// printf("Advance game called, timer = %d.\n", timer);
@@ -1219,7 +1371,19 @@ int main( int   argc,
 	meal.maxv = 1.0;
 	meal.v = 0.5;
 	meal.anxiety = 0;
+	meal.n_arrows = INITIAL_N_ARROWS;
+
+	arrow.s.x = meal.s.x;
+	arrow.s.y = meal.s.y;
+	arrow.vx = 0.0;
+	arrow.vy = 0.0;
+	arrow.state = ARROW_STATE_QUIVERED;
+	arrow.sound_playing = 0;
+
 	setup_volume_adjusting_profile(&meal.vap, &meal.s.x, &meal.s.y,
+		&player.x, &player.y, &player.angle, SQRTFALLOFF, 
+		normal_volume_adjust_function);
+	setup_volume_adjusting_profile(&arrow.vap, &arrow.s.x, &arrow.s.y,
 		&player.x, &player.y, &player.angle, SQRTFALLOFF, 
 		normal_volume_adjust_function);
 	setup_volume_adjusting_profile(&heartbeat_vap, &meal.s.x, &meal.s.y,
