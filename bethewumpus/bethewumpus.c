@@ -944,7 +944,6 @@ static gint key_press_cb(GtkWidget* widget, GdkEventKey* event, gpointer data)
 		right_arrow_pressed = 1;
 		return TRUE;
 	case GDK_space:
-		printf("space bar event\n");
 		space_bar_pressed = 1;
 		return TRUE;
 	}
@@ -1029,7 +1028,6 @@ void player_move()
 			right_arrow_pressed = 0;
 		}
 		if (space_bar_pressed) {
-			printf("button press\n");
 			jse.button[0] = 1;
 			space_bar_pressed = 0;
 		}
@@ -1372,6 +1370,7 @@ int main( int   argc,
 	player.x = SCREEN_WIDTH / 2;
 	player.y = SCREEN_WIDTH / 2;
 	player.angle = 0.0;
+	player.roar_sound_in_play = 0;
 
 	joystick = open_joystick("/dev/input/js0");
 
