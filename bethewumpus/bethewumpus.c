@@ -20,6 +20,7 @@
 */
 
 #include <gtk/gtk.h>
+#include <gdk/gdkkeysyms.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -113,6 +114,7 @@
 #define ARROW_CLATTER 44
 #define ARROW_WHOOSH 45
 
+int framerate_hz;
 int sound_device = -1;
 int debugmode = 0;
 double water_x = SCREEN_WIDTH/2;
@@ -222,6 +224,15 @@ GdkColor blackcolor;
 int timer = 0;
 int joystick;
 int forcefeedback;
+
+/* These are used if no joystick is present.  */
+/* Very crude.  Go buy a game pad.  They're not */
+/* very expensive. */
+int up_arrow_pressed;
+int down_arrow_pressed;
+int left_arrow_pressed;
+int right_arrow_pressed;
+int space_bar_pressed;
 
 struct player_t {
 	double x, y;
@@ -917,6 +928,29 @@ void meal_draw(GtkWidget *w)
 	gdk_draw_line(w->window, gc, meal.s.x+3, meal.s.y-3, meal.s.x-3, meal.s.y+3);
 }
 
+static gint key_press_cb(GtkWidget* widget, GdkEventKey* event, gpointer data)
+{
+	switch (event->keyval) {
+	case GDK_Up:
+		up_arrow_pressed = 1;
+		return TRUE;
+	case GDK_Down:
+		down_arrow_pressed = 1;
+		return TRUE;
+	case GDK_Left:
+		left_arrow_pressed = 1;
+		return TRUE;
+	case GDK_Right:
+		right_arrow_pressed = 1;
+		return TRUE;
+	case GDK_space:
+		printf("space bar event\n");
+		space_bar_pressed = 1;
+		return TRUE;
+	}
+	return FALSE;
+}
+
 static int main_da_expose(GtkWidget *w, GdkEvent *event, gpointer p)
 {
 	int i;
@@ -967,26 +1001,54 @@ void player_move()
 	int rc, i;
 	double radius, oldx, oldy, dx, dy;
 	double diffx, diffy, v;
+	double keyboard_multiplier;
 
 	rc = get_joystick_status(&jse);
 	if (rc != 0) {
-		printf("no joy.\n");
-		return;
-	}
+		/* Probably because they don't have a joystick. */
+		/* Map keys to joystick.  Very crude. */
+		jse.stick1_x = 0;
+		jse.stick2_y = 0;
+		jse.button[0] = 0;
+		keyboard_multiplier = 5;
+
+		if (up_arrow_pressed) {
+			jse.stick2_y = -16000; 
+			up_arrow_pressed = 0;
+		}
+		if (down_arrow_pressed) {
+			jse.stick2_y = 16000; 
+			down_arrow_pressed = 0;
+		}
+		if (left_arrow_pressed) {
+			jse.stick1_x = -16000; 
+			left_arrow_pressed = 0;
+		}
+		if (right_arrow_pressed) {
+			jse.stick1_x = 16000; 
+			right_arrow_pressed = 0;
+		}
+		if (space_bar_pressed) {
+			printf("button press\n");
+			jse.button[0] = 1;
+			space_bar_pressed = 0;
+		}
+	} else
+		keyboard_multiplier = 1.0;
 
 	/* rotate */
 	if (jse.stick1_x < -1000) {
-		player.angle = player.angle + 0.1 * abs(jse.stick1_x)/32767.0;
+		player.angle = player.angle + keyboard_multiplier * 0.1 * abs(jse.stick1_x)/32767.0;
 	} else if (jse.stick1_x > 1000) {
-		player.angle = player.angle - 0.1 * abs(jse.stick1_x)/32767.0;
+		player.angle = player.angle - keyboard_multiplier * 0.1 * abs(jse.stick1_x)/32767.0;
 	}
 
 	/* move */
 	if (jse.stick2_y < -2000 || jse.stick2_y > 2000) {
 		oldx = player.x;
 		oldy = player.y;
-		player.x = player.x + cos(player.angle) * 3.0 * (double) jse.stick2_y / 32767.0;
-		player.y = player.y - sin(player.angle) * 3.0 * (double) jse.stick2_y / 32767.0;
+		player.x = player.x + cos(player.angle) * 3.0 * keyboard_multiplier * (double) jse.stick2_y / 32767.0;
+		player.y = player.y - sin(player.angle) * 3.0 * keyboard_multiplier * (double) jse.stick2_y / 32767.0;
 		dx = player.x - (SCREEN_WIDTH/2);
 		dy = player.y - (SCREEN_HEIGHT/2);
 		radius = sqrt(dx * dx + dy * dy);
@@ -1312,7 +1374,7 @@ int main( int   argc,
 	player.angle = 0.0;
 
 	joystick = open_joystick("/dev/input/js0");
-   
+
 	if (initialize_portaudio() != paNoError) {
 		printf("Sound's not working... bye.\n");
 		exit(1);
@@ -1347,6 +1409,8 @@ int main( int   argc,
     
 	g_signal_connect_swapped (G_OBJECT (button), "clicked",
 		G_CALLBACK (gtk_widget_destroy), G_OBJECT (window));
+	g_signal_connect(G_OBJECT (window), "key_press_event",
+		G_CALLBACK (key_press_cb), "window");
     
 	gtk_container_add (GTK_CONTAINER (window), vbox);
 
@@ -1359,7 +1423,11 @@ int main( int   argc,
 	gtk_widget_show (main_da);
 	gtk_widget_show (button);
 
-	timer_tag = g_timeout_add(30, advance_game, NULL);
+	framerate_hz = 30; 
+	if (joystick < 0)
+		framerate_hz = 20; /* not sure this is necessary. */
+
+	timer_tag = g_timeout_add(1000 / framerate_hz, advance_game, NULL);
     
 	gtk_widget_show (window);
 	gc = gdk_gc_new(GTK_WIDGET(main_da)->window);
