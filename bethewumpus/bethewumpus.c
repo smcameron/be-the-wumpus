@@ -1195,8 +1195,10 @@ void arrow_move(struct arrow_t *arrow)
 
 			if (dist2 < (ARROW_HIT_DIST * ARROW_HIT_DIST)) {
 				printf("Arrow hit the wumpus!\n");
-				if (arrow->sound_playing)
+				if (arrow->sound_playing) {
 					cancel_sound(arrow->sound_slot);
+					arrow->sound_playing = 0;
+				}
 			}
 
 			break;
