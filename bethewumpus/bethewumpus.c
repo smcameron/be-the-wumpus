@@ -21,6 +21,7 @@
 
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
+#include <stdint.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -170,7 +171,7 @@ struct sound_clip {
 	int active;
 	int nsamples;
 	int pos;
-	double *sample;
+	int16_t *sample;
 	double const_right_vol;
 	double const_left_vol;
 	double right_vol;
@@ -385,15 +386,15 @@ int read_clip(int clipnum, char *filename)
 */
 	printf(".");
 
-	clip[clipnum].sample = (double *) 
-		malloc(sizeof(double) * sfinfo.channels * sfinfo.frames);
+	clip[clipnum].sample = (int16_t *)
+		malloc(sizeof(int16_t) * sfinfo.channels * sfinfo.frames);
 	if (clip[clipnum].sample == NULL) {
 		printf("Can't get memory for sound data for %llu frames in %s\n", 
 			sfinfo.frames, filename);
 		goto error;
 	}
 
-	nframes = sf_readf_double(f, clip[clipnum].sample, sfinfo.frames);
+	nframes = sf_readf_short(f, clip[clipnum].sample, sfinfo.frames);
 	if (nframes != sfinfo.frames) {
 		printf("Read only %llu of %llu frames from %s\n", 
 			nframes, sfinfo.frames, filename);
@@ -502,8 +503,8 @@ static int SoundCallback(const void *inputBuffer, void *outputBuffer,
 					audio_queue[j].end_function(i);
 				continue;
 			}
-			outputleft += audio_queue[j].sample[sample] * audio_queue[j].left_vol;
-			outputright += audio_queue[j].sample[sample+1] * audio_queue[j].right_vol;
+			outputleft += (float)audio_queue[j].sample[sample]    / (float)INT16_MAX * audio_queue[j].left_vol;
+			outputright += (float)audio_queue[j].sample[sample+1] / (float)INT16_MAX * audio_queue[j].right_vol;
 		}
 		// *out++ = (float) (outputleft * audio_queue[j].left_vol / 2.0);
 		// *out++ = (float) (outputright * audio_queue[j].right_vol / 2.0);
