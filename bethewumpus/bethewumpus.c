@@ -812,10 +812,21 @@ void level_callback(int which_slot)
 	add_sound(LEVEL_ONE_SOUND + level, ANY_SLOT, 0.1, 0.1, NULL, add_falling_meal);
 }
 
+void intro_music_callback(int which_slot)
+{
+	intro_music_slot = -1;
+	level_callback(which_slot);
+}
+
+void Be_The_Wumpus_callback(int which_slot)
+{
+	Be_The_Wumpus_slot = -1;
+}
+
 void start_intro_music()
 {
-	intro_music_slot = add_sound(INTRO_MUSIC_SOUND, ANY_SLOT, 0.1, 0.1, NULL, level_callback);
-	Be_The_Wumpus_slot = add_sound(BETHEWUMPUS_SOUND, ANY_SLOT, 0.1, 0.1, NULL, NULL);
+	intro_music_slot = add_sound(INTRO_MUSIC_SOUND, ANY_SLOT, 0.1, 0.1, NULL, intro_music_callback);
+	Be_The_Wumpus_slot = add_sound(BETHEWUMPUS_SOUND, ANY_SLOT, 0.1, 0.1, NULL, Be_The_Wumpus_callback);
 }
 
 void adjust_volume(int which_slot, double left_vol, double right_vol)
