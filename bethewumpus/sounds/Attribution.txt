@@ -72,3 +72,42 @@ and released under the same Creative Commons Sampling Plus 1.0 License.
 	wumpus_intro_music.ogg
 	wumpus_roar.ogg
 
+The sounds listed below are in the public domain:  
+
+	qubodup_fall_with_impact.ogg
+	qubodup_fuck_fuck.ogg
+	qubodup_hello.ogg
+	qubodup_jesus_christ1.ogg
+	qubodup_jesus_christ2.ogg
+	qubodup_mild_surprise1.ogg
+	qubodup_mild_surprise2.ogg
+	qubodup_normal_breath1.ogg
+	qubodup_normal_breath2.ogg
+	qubodup_normal_breath3.ogg
+	qubodup_oh_god2.ogg
+	qubodup_oh_god.ogg
+	qubodup_shit_oh_shit.ogg
+	qubodup_what_was_that.ogg
+	qubodup_who_is_there.ogg
+	qubodup_wumpus_dines.ogg
+
+The above "qubodup*.ogg" files are based on the following files by freesound user qubodup.
+
+        By qubodup (http://freesound.iua.upf.edu/usersViewSingle.php?id=71257)
+            stupid_screams.flac (http://freesound.iua.upf.edu/samplesViewSingle.php?id=50942)
+            stupid_falls.flac (http://freesound.iua.upf.edu/samplesViewSingle.php?id=50941)
+            fearing_hello.flac (http://freesound.iua.upf.edu/samplesViewSingle.php?id=50940)
+            fear_talk.flac (http://freesound.iua.upf.edu/samplesViewSingle.php?id=50939)
+            fear_breath.flac (http://freesound.iua.upf.edu/samplesViewSingle.php?id=50938)
+
+	Although the links show those as licensed under 
+	"Creative Commons Sampling plus 1.0", in this thread:
+	http://freesound.iua.upf.edu/forum/viewtopic.php?t=2952
+	qubodup tells me: "My stuff is in the public domain (which of course
+	allows you to relicense them.)"
+	
+	See also: http://wiki.freegamedev.net/index.php/User:Qubodup
+
+
+
+

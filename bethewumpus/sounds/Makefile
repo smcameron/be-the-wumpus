@@ -47,7 +47,23 @@ all:	32857_zimm_heartbeat_regular_trimmed.wav \
 	huuuuuh.wav \
 	mild_surprise_breath.wav \
 	arrow_clatter.wav \
-	arrow_whoosh.wav
+	arrow_whoosh.wav \
+	qubodup_fall_with_impact.wav \
+	qubodup_fuck_fuck.wav \
+	qubodup_hello.wav \
+	qubodup_jesus_christ1.wav \
+	qubodup_jesus_christ2.wav \
+	qubodup_mild_surprise1.wav \
+	qubodup_mild_surprise2.wav \
+	qubodup_normal_breath1.wav \
+	qubodup_normal_breath2.wav \
+	qubodup_normal_breath3.wav \
+	qubodup_oh_god2.wav \
+	qubodup_oh_god.wav \
+	qubodup_shit_oh_shit.wav \
+	qubodup_what_was_that.wav \
+	qubodup_who_is_there.wav \
+	qubodup_wumpus_dines.wav
 
 clean:
 	/bin/rm -f *.wav
