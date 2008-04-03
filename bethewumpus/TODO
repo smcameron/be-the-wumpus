@@ -10,3 +10,5 @@ done  * Add eating noises
 done  * Recompute sound volumes on entry to sound callback, rather than
         only when sounds are initated, so the stereo field won't jump
 	around, but will rotate smoothly.  This one is important.
+done  * allow different cave wanderers on each level, instead of just
+	the same one over and over.
