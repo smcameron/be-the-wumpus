@@ -43,7 +43,7 @@
 
 #define SAMPLE_RATE   (44100)
 #define FRAMES_PER_BUFFER  (1024)
-#define NCLIPS 46
+#define NCLIPS 62
 #define MAX_CONCURRENT_SOUNDS NCLIPS 
 #define ANY_SLOT -1
 #define MUSIC_SLOT 1
@@ -114,6 +114,22 @@
 #define OHSHIT 43
 #define ARROW_CLATTER 44
 #define ARROW_WHOOSH 45
+#define QUBODUP_FALL_WITH_IMPACT 46
+#define QUBODUP_FUCK_FUCK 47
+#define QUBODUP_HELLO 48
+#define QUBODUP_JESUS_CHRIST1 49
+#define QUBODUP_JESUS_CHRIST2 50
+#define QUBODUP_MILD_SURPRISE1 51
+#define QUBODUP_MILD_SURPRISE2 52
+#define QUBODUP_NORMAL_BREATH1 53
+#define QUBODUP_NORMAL_BREATH2 54
+#define QUBODUP_NORMAL_BREATH3 55
+#define QUBODUP_OH_GOD 56
+#define QUBODUP_OH_GOD2 57
+#define QUBODUP_SHIT_OH_SHIT 58
+#define QUBODUP_WHAT_WAS_THAT 59
+#define QUBODUP_WHO_IS_THERE 60
+#define QUBODUP_WUMPUS_DINES 61
 
 int framerate_hz;
 int sound_device = -1;
@@ -123,6 +139,119 @@ double water_y = 0;
 int level = 0;
 int intro_music_slot = -1;
 int Be_The_Wumpus_slot = -1;
+
+struct person_sound_clip {
+	int index;
+	double vol;
+};
+
+struct person_sound_clip_map_entry {
+	int count; /* number of clips a person has of a certain type */
+	int offset; /* offset into the person's list of the first sound of this type */
+};
+
+struct person_sound_clip_map_t {
+	struct person_sound_clip *psc;
+	struct person_sound_clip_map_entry fall;		/* falling type sounds */
+	struct person_sound_clip_map_entry normal_breath;	/* normal breathing sounds */
+	struct person_sound_clip_map_entry heartbeat;		/* ...etc. */
+	struct person_sound_clip_map_entry dine;
+	struct person_sound_clip_map_entry fast_breath;
+	struct person_sound_clip_map_entry mild_surprise;
+	struct person_sound_clip_map_entry surprise;
+	struct person_sound_clip_map_entry fearful_mumbling;
+};
+
+
+struct person_sound_clip steve_clip[] = {
+	{ FALL_WITH_IMPACT_SOUND, 1.0 },
+	{ BREATH_SOUND, NOMINAL_BREATH_VOL },
+	{ HEARTBEAT_SOUND, NOMINAL_HEARTBEAT_VOL },
+	{ DINE, 1.0 },
+	{ FAST_BREATH1, NOMINAL_BREATH_VOL },
+	{ FAST_BREATH2, NOMINAL_BREATH_VOL },
+	{ MILD_SURPRISE, NOMINAL_BREATH_VOL },
+	{ SURPRISE, NOMINAL_BREATH_VOL },
+	{ HELLO, NOMINAL_BREATH_VOL }, 
+	{ OHSHIT, NOMINAL_BREATH_VOL },
+};
+
+struct person_sound_clip qubodup_clip[] = { /* qubodup is freesound username */
+	{ QUBODUP_FALL_WITH_IMPACT, 1.0 },
+	{ QUBODUP_NORMAL_BREATH1, NOMINAL_BREATH_VOL * 2.0 },
+	{ HEARTBEAT_SOUND, NOMINAL_HEARTBEAT_VOL },
+	{ QUBODUP_WUMPUS_DINES, 0.8 },
+	{ QUBODUP_NORMAL_BREATH2, NOMINAL_BREATH_VOL * 3.0 },
+	{ QUBODUP_NORMAL_BREATH3, NOMINAL_BREATH_VOL * 3.0 },
+	{ QUBODUP_MILD_SURPRISE1, NOMINAL_BREATH_VOL * 3.0 },
+	{ QUBODUP_MILD_SURPRISE2, NOMINAL_BREATH_VOL * 3.0 },
+	{ QUBODUP_HELLO, NOMINAL_BREATH_VOL * 3.0 }, 
+	{ QUBODUP_FUCK_FUCK, NOMINAL_BREATH_VOL * 3.0 }, 
+	{ QUBODUP_OH_GOD,  NOMINAL_BREATH_VOL * 3.0 },
+	{ QUBODUP_OH_GOD2, NOMINAL_BREATH_VOL * 3.0 },
+	{ QUBODUP_SHIT_OH_SHIT, NOMINAL_BREATH_VOL * 3.0 },
+	{ QUBODUP_WHAT_WAS_THAT, NOMINAL_BREATH_VOL * 3.0 },
+	{ QUBODUP_WHO_IS_THERE, NOMINAL_BREATH_VOL * 3.0 },
+};
+
+struct person_sound_clip alphahog_clip[] = { /* alphahog is freesound username */
+	{ QUBODUP_FALL_WITH_IMPACT, 1.0 },
+	{ BREATH_SOUND, NOMINAL_BREATH_VOL },
+	{ HEARTBEAT_SOUND, NOMINAL_HEARTBEAT_VOL },
+	{ DINE, 1.0 },
+	{ FAST_BREATH1, NOMINAL_BREATH_VOL },
+	{ FAST_BREATH2, NOMINAL_BREATH_VOL },
+	{ MILD_SURPRISE, NOMINAL_BREATH_VOL },
+	{ SURPRISE, NOMINAL_BREATH_VOL },
+	{ HELLO, NOMINAL_BREATH_VOL }, 
+	{ OHSHIT, NOMINAL_BREATH_VOL },
+};
+
+struct person_sound_clip_map_t person_sound_steve_map = {
+	.psc			= steve_clip,
+	.fall 			= { 1, 0 }, /* steve has one fall type sound, at offset 0. */
+	.normal_breath 		= { 1, 1 }, /* and 1 normal breathing sound at offset 1, etc. */
+	.heartbeat		= { 1, 2 },
+	.dine			= { 1, 3 },
+	.fast_breath		= { 2, 4 },
+	.mild_surprise		= { 1, 6 },
+	.surprise		= { 1, 7 },
+	.fearful_mumbling	= { 2, 8 },
+};
+
+struct person_sound_clip_map_t person_sound_qubodup_map = {
+	.psc			= qubodup_clip,
+	.fall 			= { 1, 0 },
+	.normal_breath 		= { 1, 1 },
+	.heartbeat		= { 1, 2 },
+	.dine			= { 1, 3 },
+	.fast_breath		= { 2, 4 },
+	.mild_surprise		= { 2, 6 },
+	.surprise		= { 1, 7 },
+	.fearful_mumbling	= { 7, 8 },
+};
+
+struct person_sound_clip_map_t person_sound_alphahog_map = {
+	.psc			= alphahog_clip,
+	.fall 			= { 1, 0 },
+	.normal_breath 		= { 1, 1 },
+	.heartbeat		= { 1, 2 },
+	.dine			= { 1, 3 },
+	.fast_breath		= { 2, 4 },
+	.mild_surprise		= { 1, 6 },
+	.surprise		= { 1, 7 },
+	.fearful_mumbling	= { 2, 8 },
+};
+
+struct person_sound_clip_map_t *person_sound[] = {
+	&person_sound_qubodup_map,
+	&person_sound_steve_map,
+	&person_sound_alphahog_map
+};
+
+#define NPERSONS (sizeof(person_sound) / sizeof(person_sound[0]))
+
+int current_person = -1;
 
 struct level_struct {
 	double maxv;
@@ -257,6 +386,20 @@ static inline int randomn(int n)
 {
         return ((random() & 0x0000ffff) * n) >> 16;
 }
+
+void choose_random_person_sound(struct person_sound_clip *psc, struct person_sound_clip_map_entry *pscme,
+	int *sound, double *vol) 
+{
+	int n;
+
+	n = randomn(pscme->count);
+	*sound = psc[pscme->offset + n].index;
+	*vol = psc[pscme->offset + n].vol;
+}
+
+#define choose_random_sound(soundtype, sound, vol) \
+	choose_random_person_sound(person_sound[current_person]->psc, \
+		&person_sound[current_person]->soundtype, (&sound), (&vol))
 
 void setup_volume_adjusting_profile(struct volume_adjusting_profile_t *vap, 
 		double *sx, double *sy, double *lx, double *ly, double *la,
@@ -461,6 +604,22 @@ int init_clips()
 	read_clip(OHSHIT, "sounds/oh_shit_oh_shit.wav");
 	read_clip(ARROW_CLATTER, "sounds/arrow_clatter.wav");
 	read_clip(ARROW_WHOOSH, "sounds/arrow_whoosh.wav");
+	read_clip(QUBODUP_FALL_WITH_IMPACT, "sounds/qubodup_fall_with_impact.wav");
+	read_clip(QUBODUP_FUCK_FUCK, "sounds/qubodup_fuck_fuck.wav");
+	read_clip(QUBODUP_HELLO, "sounds/qubodup_hello.wav");
+	read_clip(QUBODUP_JESUS_CHRIST1, "sounds/qubodup_jesus_christ1.wav");
+	read_clip(QUBODUP_JESUS_CHRIST2, "sounds/qubodup_jesus_christ2.wav");
+	read_clip(QUBODUP_MILD_SURPRISE1, "sounds/qubodup_mild_surprise1.wav");
+	read_clip(QUBODUP_MILD_SURPRISE2, "sounds/qubodup_mild_surprise2.wav");
+	read_clip(QUBODUP_NORMAL_BREATH1, "sounds/qubodup_normal_breath1.wav");
+	read_clip(QUBODUP_NORMAL_BREATH2, "sounds/qubodup_normal_breath2.wav");
+	read_clip(QUBODUP_NORMAL_BREATH3, "sounds/qubodup_normal_breath3.wav");
+	read_clip(QUBODUP_OH_GOD, "sounds/qubodup_oh_god.wav");
+	read_clip(QUBODUP_OH_GOD2, "sounds/qubodup_oh_god2.wav");
+	read_clip(QUBODUP_SHIT_OH_SHIT, "sounds/qubodup_shit_oh_shit.wav");
+	read_clip(QUBODUP_WHAT_WAS_THAT, "sounds/qubodup_what_was_that.wav");
+	read_clip(QUBODUP_WHO_IS_THERE, "sounds/qubodup_who_is_there.wav");
+	read_clip(QUBODUP_WUMPUS_DINES, "sounds/qubodup_wumpus_dines.wav");
 	printf("\n");
 	return 0;
 }
@@ -710,15 +869,26 @@ void try_firing_arrow() /* called by breath end callback */
 
 void breath_end_callback(int which_slot)
 {
+
+	if (player.won_round)
+		return; /* don't breath if meal's been eaten. */	
 	if (meal.anxiety > 8) { /* VERY anxious */
+		int surprise_sound;
+		double surprise_volume;
+
+		choose_random_sound(surprise, surprise_sound, surprise_volume);
 		meal.anxiety = 4;
-		add_sound(SURPRISE, BREATH_SLOT, 
-			NOMINAL_BREATH_VOL, NOMINAL_BREATH_VOL,
+		add_sound(surprise_sound, BREATH_SLOT, 
+			surprise_volume, surprise_volume,
 			&meal.vap, breath_end_callback);
 	} else if (meal.anxiety > 5) {/* pretty damned anxious */
+		int mild_surprise_sound;
+		double mild_surprise_volume;
+
+		choose_random_sound(mild_surprise, mild_surprise_sound, mild_surprise_volume);
 		meal.anxiety = 4;
-		add_sound(MILD_SURPRISE, BREATH_SLOT, 
-			NOMINAL_BREATH_VOL, NOMINAL_BREATH_VOL,
+		add_sound(mild_surprise_sound, BREATH_SLOT, 
+			mild_surprise_volume, mild_surprise_volume,
 			&meal.vap, breath_end_callback);
 		try_firing_arrow();
 	} else if (meal.anxiety > 3) {/* anxious */
@@ -728,29 +898,41 @@ void breath_end_callback(int which_slot)
 		if (randomn(100) < 10)
 			meal.anxiety = 2;
 		n = randomn(100);
-		if (n < 10)
-			add_sound(OHSHIT, BREATH_SLOT, 
-				NOMINAL_BREATH_VOL, NOMINAL_BREATH_VOL,
+		if (n < 40) {
+			int mumble;
+			double mumble_vol;
+
+			choose_random_sound(fearful_mumbling, mumble, mumble_vol);
+			add_sound(mumble, BREATH_SLOT, 
+				mumble_vol, mumble_vol,
 				&meal.vap, breath_end_callback);
-		else if (n < 20)
-			add_sound(HELLO, BREATH_SLOT, 
-				NOMINAL_BREATH_VOL, NOMINAL_BREATH_VOL,
+		} else {
+			int fast_breath_sound;
+			double fast_breath_vol;
+		
+			choose_random_sound(fast_breath, fast_breath_sound, fast_breath_vol);
+			add_sound(fast_breath_sound, BREATH_SLOT, 
+				fast_breath_vol, fast_breath_vol,
 				&meal.vap, breath_end_callback);
-		else
-			add_sound(FAST_BREATH2, BREATH_SLOT, 
-				NOMINAL_BREATH_VOL, NOMINAL_BREATH_VOL,
-				&meal.vap, breath_end_callback);
+		}
 		try_firing_arrow();
 	} else if (meal.anxiety > 2) {/* starting to get anxious */
+		int fast_breath_sound;
+		double fast_breath_vol;
+		choose_random_sound(fast_breath, fast_breath_sound, fast_breath_vol);
 		if (randomn(100) < 10)
 			meal.anxiety = 2;
-		add_sound(FAST_BREATH1, BREATH_SLOT, 
-			NOMINAL_BREATH_VOL, NOMINAL_BREATH_VOL,
+		add_sound(fast_breath_sound, BREATH_SLOT, 
+			fast_breath_vol, fast_breath_vol,
 			&meal.vap, breath_end_callback);
 		try_firing_arrow();
 	} else {  	/* as calm as can be when in a dark cave with a hungry wumpus */
-		add_sound(BREATH_SOUND, BREATH_SLOT, 
-			NOMINAL_BREATH_VOL, NOMINAL_BREATH_VOL,
+		int breath_sound;
+		double breath_vol;
+
+		choose_random_sound(normal_breath, breath_sound, breath_vol);
+		add_sound(breath_sound, BREATH_SLOT, 
+			breath_vol, breath_vol,
 			&meal.vap, breath_end_callback);
 	}
 }
@@ -778,6 +960,8 @@ void add_falling_meal(int which_slot)
 {
 	
 	double dist1r, dist1p, dist2r;
+	int fall_sound;
+	double fall_sound_vol;
 
 	meal.s.x = 10000;
 	meal.s.y = 10000;
@@ -800,7 +984,9 @@ void add_falling_meal(int which_slot)
 
 	/* find_sound_adjust_factors(player.x, player.y, player.angle, 
 		meal.s.x, meal.s.y, &leftadjust, &rightadjust, LINEARFALLOFF); */
-	add_sound(FALL_WITH_IMPACT_SOUND, ANY_SLOT, 1.0, 1.0, 
+
+	choose_random_sound(fall, fall_sound, fall_sound_vol);
+	add_sound(fall_sound, ANY_SLOT, fall_sound_vol, fall_sound_vol, 
 			&meal.vap, start_game_callback);
 	water_end_callback(WATER_SLOT);
 	drip_end_callback(DRIP_SLOT);
@@ -988,6 +1174,7 @@ static int main_da_expose(GtkWidget *w, GdkEvent *event, gpointer p)
 void advance_level()
 {
 	level++;
+	current_person = ((current_person + 1) % NPERSONS);
 	if (level > 9)
 		level = 9;
 
@@ -1125,8 +1312,13 @@ void player_move()
 			ty = player.y - sin(player.angle) * 15.0 * (double) jse.stick2_y / 32767.0;
 			dist = sqrt((meal.s.x - tx) * (meal.s.x - tx) + (meal.s.y - ty) * (meal.s.y - ty));
 			if (dist < MEALDIST) {
-				add_sound(DINE, ANY_SLOT, 1.0, 1.0, 
+				int dine_sound;
+				double dine_vol;
+
+				choose_random_sound(dine, dine_sound, dine_vol);
+				add_sound(dine_sound, ANY_SLOT, dine_vol, dine_vol, 
 					NULL, player_roar_sound_end_callback);
+
 				player.won_round = 1;
 			} else {
 				add_sound(ROAR, ANY_SLOT, 1.0, 1.0, 
