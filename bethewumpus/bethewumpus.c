@@ -43,7 +43,7 @@
 
 #define SAMPLE_RATE   (44100)
 #define FRAMES_PER_BUFFER  (1024)
-#define NCLIPS 62
+#define NCLIPS 76 
 #define MAX_CONCURRENT_SOUNDS NCLIPS 
 #define ANY_SLOT -1
 #define MUSIC_SLOT 1
@@ -130,6 +130,19 @@
 #define QUBODUP_WHAT_WAS_THAT 59
 #define QUBODUP_WHO_IS_THERE 60
 #define QUBODUP_WUMPUS_DINES 61
+#define ALPHAHOG_BREATH1 62
+#define ALPHAHOG_BREATH2 63
+#define ALPHAHOG_BREATH3 64
+#define ALPHAHOG_BREATH4 65
+#define ALPHAHOG_BREATH5 66
+#define ALPHAHOG_BREATH6 67
+#define ALPHAHOG_FALL_WITH_IMPACT 68
+#define ALPHAHOG_HELLO2 69
+#define ALPHAHOG_HELLO_IS_SOMEONE_THERE 70
+#define ALPHAHOG_HUUUH 71
+#define ALPHAHOG_OH_SHEEIT_SHEEIT 72
+#define ALPHAHOG_OHSHIT 73
+#define ALPHAHOG_WUMPUS_DINE 74
 
 int framerate_hz;
 int sound_device = -1;
@@ -195,17 +208,22 @@ struct person_sound_clip qubodup_clip[] = { /* qubodup is freesound username */
 };
 
 struct person_sound_clip alphahog_clip[] = { /* alphahog is freesound username */
-	{ QUBODUP_FALL_WITH_IMPACT, 1.0 },
-	{ BREATH_SOUND, NOMINAL_BREATH_VOL },
+	{ ALPHAHOG_FALL_WITH_IMPACT, 1.0 },
+	{ ALPHAHOG_BREATH1, NOMINAL_BREATH_VOL * 3.0 },
+	{ ALPHAHOG_BREATH2, NOMINAL_BREATH_VOL * 3.0 },
+	{ ALPHAHOG_BREATH3, NOMINAL_BREATH_VOL * 3.0 },
+	{ ALPHAHOG_BREATH4, NOMINAL_BREATH_VOL * 3.0 },
+	{ ALPHAHOG_BREATH5, NOMINAL_BREATH_VOL * 3.0 },
+	{ ALPHAHOG_BREATH6, NOMINAL_BREATH_VOL * 3.0 },
 	{ HEARTBEAT_SOUND, NOMINAL_HEARTBEAT_VOL },
-	{ DINE, 1.0 },
-	{ FAST_BREATH1, NOMINAL_BREATH_VOL },
-	{ FAST_BREATH2, NOMINAL_BREATH_VOL },
-	{ MILD_SURPRISE, NOMINAL_BREATH_VOL },
-	{ SURPRISE, NOMINAL_BREATH_VOL },
-	{ HELLO, NOMINAL_BREATH_VOL }, 
-	{ OHSHIT, NOMINAL_BREATH_VOL },
+	{ ALPHAHOG_WUMPUS_DINE, 1.0 },
+	{ ALPHAHOG_HUUUH, NOMINAL_BREATH_VOL * 3.0 },
+	{ ALPHAHOG_HELLO2, NOMINAL_BREATH_VOL * 3.0 }, 
+	{ ALPHAHOG_HELLO_IS_SOMEONE_THERE, NOMINAL_BREATH_VOL* 3.0  }, 
+	{ ALPHAHOG_OHSHIT, NOMINAL_BREATH_VOL * 3.0 },
+	{ ALPHAHOG_OH_SHEEIT_SHEEIT, NOMINAL_BREATH_VOL* 3.0  },
 };
+
 
 struct person_sound_clip_map_t person_sound_steve_map = {
 	.psc			= steve_clip,
@@ -234,19 +252,19 @@ struct person_sound_clip_map_t person_sound_qubodup_map = {
 struct person_sound_clip_map_t person_sound_alphahog_map = {
 	.psc			= alphahog_clip,
 	.fall 			= { 1, 0 },
-	.normal_breath 		= { 1, 1 },
-	.heartbeat		= { 1, 2 },
-	.dine			= { 1, 3 },
-	.fast_breath		= { 2, 4 },
+	.normal_breath 		= { 3, 1 },
+	.fast_breath		= { 3, 4 },
+	.heartbeat		= { 1, 7 },
+	.dine			= { 1, 8 },
 	.mild_surprise		= { 1, 6 },
-	.surprise		= { 1, 7 },
-	.fearful_mumbling	= { 2, 8 },
+	.surprise		= { 1, 9 },
+	.fearful_mumbling	= { 4, 10 },
 };
 
 struct person_sound_clip_map_t *person_sound[] = {
-	&person_sound_qubodup_map,
+	&person_sound_alphahog_map,
 	&person_sound_steve_map,
-	&person_sound_alphahog_map
+	&person_sound_qubodup_map,
 };
 
 #define NPERSONS (sizeof(person_sound) / sizeof(person_sound[0]))
@@ -604,6 +622,7 @@ int init_clips()
 	read_clip(OHSHIT, "sounds/oh_shit_oh_shit.wav");
 	read_clip(ARROW_CLATTER, "sounds/arrow_clatter.wav");
 	read_clip(ARROW_WHOOSH, "sounds/arrow_whoosh.wav");
+
 	read_clip(QUBODUP_FALL_WITH_IMPACT, "sounds/qubodup_fall_with_impact.wav");
 	read_clip(QUBODUP_FUCK_FUCK, "sounds/qubodup_fuck_fuck.wav");
 	read_clip(QUBODUP_HELLO, "sounds/qubodup_hello.wav");
@@ -620,6 +639,21 @@ int init_clips()
 	read_clip(QUBODUP_WHAT_WAS_THAT, "sounds/qubodup_what_was_that.wav");
 	read_clip(QUBODUP_WHO_IS_THERE, "sounds/qubodup_who_is_there.wav");
 	read_clip(QUBODUP_WUMPUS_DINES, "sounds/qubodup_wumpus_dines.wav");
+
+	read_clip(ALPHAHOG_BREATH1, "sounds/alphahog_breath1.wav");
+	read_clip(ALPHAHOG_BREATH2, "sounds/alphahog_breath2.wav");
+	read_clip(ALPHAHOG_BREATH3, "sounds/alphahog_breath3.wav");
+	read_clip(ALPHAHOG_BREATH4, "sounds/alphahog_breath4.wav");
+	read_clip(ALPHAHOG_BREATH5, "sounds/alphahog_breath5.wav");
+	read_clip(ALPHAHOG_BREATH6, "sounds/alphahog_breath6.wav");
+	read_clip(ALPHAHOG_FALL_WITH_IMPACT, "sounds/alphahog_fall_with_impact.wav");
+	read_clip(ALPHAHOG_HELLO2, "sounds/alphahog_hello2.wav");
+	read_clip(ALPHAHOG_HELLO_IS_SOMEONE_THERE, "sounds/alphahog_hello_is_someone_there.wav");
+	read_clip(ALPHAHOG_HUUUH, "sounds/alphahog_huuuh.wav");
+	read_clip(ALPHAHOG_OH_SHEEIT_SHEEIT, "sounds/alphahog_oh_sheeit_sheeit.wav");
+	read_clip(ALPHAHOG_OHSHIT, "sounds/alphahog_ohshit.wav");
+	read_clip(ALPHAHOG_WUMPUS_DINE, "sounds/alphahog_wumpus_dine.wav");
+
 	printf("\n");
 	return 0;
 }
