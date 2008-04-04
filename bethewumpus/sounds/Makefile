@@ -63,7 +63,21 @@ all:	32857_zimm_heartbeat_regular_trimmed.wav \
 	qubodup_shit_oh_shit.wav \
 	qubodup_what_was_that.wav \
 	qubodup_who_is_there.wav \
-	qubodup_wumpus_dines.wav
+	qubodup_wumpus_dines.wav \
+	alphahog_augh.wav \
+	alphahog_breath1.wav \
+	alphahog_breath2.wav \
+	alphahog_breath3.wav \
+	alphahog_breath5.wav \
+	alphahog_breath6.wav \
+	alphahog_breath4.wav \
+	alphahog_fall_with_impact.wav \
+	alphahog_hello2.wav \
+	alphahog_hello_is_someone_there.wav \
+	alphahog_huuuh.wav \
+	alphahog_oh_sheeit_sheeit.wav \
+	alphahog_ohshit.wav \
+	alphahog_wumpus_dine.wav
 
 clean:
 	/bin/rm -f *.wav

@@ -109,5 +109,25 @@ The above "qubodup*.ogg" files are based on the following files by freesound use
 	See also: http://wiki.freegamedev.net/index.php/User:Qubodup
 
 
+The below "alphahog*.ogg" files were made from recordings of
+freesound user "alphahog", aka Mike Vendetti 
+(see http://www.mikethevoiceman.com) and are released under a 
+Creative Commons Sampling 1.0 license.
+
+	alphahog_breath1.ogg
+	alphahog_breath2.ogg
+	alphahog_breath3.ogg
+	alphahog_breath4.ogg
+	alphahog_breath5.ogg
+	alphahog_breath6.ogg
+	alphahog_fall_with_impact.ogg
+	alphahog_hello2.ogg
+	alphahog_hello_is_someone_there.ogg
+	alphahog_huuuh.ogg
+	alphahog_oh_sheeit_sheeit.ogg
+	alphahog_ohshit.ogg
+	alphahog_wumpus_dine.ogg
+
+
 
 
