@@ -64,7 +64,6 @@ all:	32857_zimm_heartbeat_regular_trimmed.wav \
 	qubodup_what_was_that.wav \
 	qubodup_who_is_there.wav \
 	qubodup_wumpus_dines.wav \
-	alphahog_augh.wav \
 	alphahog_breath1.wav \
 	alphahog_breath2.wav \
 	alphahog_breath3.wav \
