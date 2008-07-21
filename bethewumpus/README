@@ -15,14 +15,8 @@ BUILDING:
 To build, just type "make".
 
 You will need libportaudio (http://www.portaudio.com/ -- version 19, not 18)
-and libsndfile (http://www.mega-nerd.com/libsndfile/) if you don't already 
-have them on your system.
-
-You will need oggdec to decode the ogg files into
-wav files (vorbisutils package).
-
-You will need quite a bit of disk space for the 
-decoded wav files.
+and libvorbisfile (http://xiph.org) if you don't already have them on 
+your system.
 
 You will need gtk-2.0 libs as well.  GTK could
 probably be dispensed with, as it is used mainly

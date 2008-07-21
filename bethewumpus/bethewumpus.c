@@ -26,14 +26,17 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include <portaudio.h>
-#include <sndfile.h>
 
 #define GNU_SOURCE
 #include <getopt.h>
 
 #include "joystick.h"
+#include "ogg_to_pcm.h"
 
 #define PI (3.1415927)
 #define SCREEN_WIDTH 600
@@ -524,20 +527,28 @@ void constant_volume_adjust_function(struct sound_clip *clip)
 	return;
 }
 
-int read_clip(int clipnum, char *filename)
-{
-	SNDFILE *f;
-	SF_INFO sfinfo;
-	sf_count_t nframes;
 
-	memset(&sfinfo, 0, sizeof(sfinfo));
-	f = sf_open(filename, SFM_READ, &sfinfo);
-	if (f == NULL) {
-		fprintf(stderr, "sf_open('%s') failed.\n", filename);
-		return -1;
+int read_ogg_clip(int clipnum, char *filename)
+{
+	unsigned long long nframes;
+	char filebuf[PATH_MAX];
+	struct stat statbuf;
+	int samplesize, sample_rate;
+	int nchannels;
+	int rc;
+
+	strncpy(filebuf, filename, PATH_MAX);
+	rc = stat(filebuf, &statbuf);
+	if (rc != 0) {
+		snprintf(filebuf, PATH_MAX, "%s", filename);
+		rc = stat(filebuf, &statbuf);
+		if (rc != 0) {
+			fprintf(stderr, "stat('%s') failed.\n", filebuf);
+			return -1;
+		}
 	}
 /*
-	printf("Reading sound file: '%s'\n", filename);
+	printf("Reading sound file: '%s'\n", filebuf);
 	printf("frames = %lld\n", sfinfo.frames);
 	printf("samplerate = %d\n", sfinfo.samplerate);
 	printf("channels = %d\n", sfinfo.channels);
@@ -545,29 +556,26 @@ int read_clip(int clipnum, char *filename)
 	printf("sections = %d\n", sfinfo.sections);
 	printf("seekable = %d\n", sfinfo.seekable);
 */
-	printf(".");
-
-	clip[clipnum].sample = (int16_t *)
-		malloc(sizeof(int16_t) * sfinfo.channels * sfinfo.frames);
+	rc = ogg_to_pcm(filebuf, &clip[clipnum].sample, &samplesize,
+		&sample_rate, &nchannels, &nframes);
 	if (clip[clipnum].sample == NULL) {
 		printf("Can't get memory for sound data for %llu frames in %s\n", 
-			sfinfo.frames, filename);
+			nframes, filebuf);
 		goto error;
 	}
 
-	nframes = sf_readf_short(f, clip[clipnum].sample, sfinfo.frames);
-	if (nframes != sfinfo.frames) {
-		printf("Read only %llu of %llu frames from %s\n", 
-			nframes, sfinfo.frames, filename);
+	if (rc != 0) {
+		fprintf(stderr, "Error: ogg_to_pcm('%s') failed.\n", 
+			filebuf);
+		goto error;
 	}
-	clip[clipnum].nsamples = (int) nframes * 2;
+
+	clip[clipnum].nsamples = (int) nframes * nchannels;
 	if (clip[clipnum].nsamples < 0)
 		clip[clipnum].nsamples = 0;
 
-	sf_close(f);
 	return 0;
 error:
-	sf_close(f);
 	return -1;
 }
 
@@ -576,83 +584,83 @@ int init_clips()
 {
 	memset(&audio_queue, 0, sizeof(audio_queue));
 
-	printf("Reading sound files.");
-	read_clip(RUNNING_WATER, "sounds/running_water.wav");
-	read_clip(BREATH_SOUND, "sounds/breath2.wav");
-	read_clip(HEARTBEAT_SOUND, "sounds/32857_zimm_heartbeat_regular_trimmed.wav");
-	read_clip(DRIP_SOUND, "sounds/drips2.wav");
-	read_clip(SCARY_MUSIC_SOUND, "sounds/scary_wumpus_music.wav");
-	read_clip(INTRO_MUSIC_SOUND, "sounds/wumpus_intro_music.wav");
-	read_clip(BETHEWUMPUS_SOUND, "sounds/be_the_wumpus.wav");
-	read_clip(FALL_WITH_IMPACT_SOUND, "sounds/fall_with_impact.wav");
-	read_clip(LOUD_SPLASH1, "sounds/loud_splash1.wav");
-	read_clip(MED_SPLASH1, "sounds/medium_splash1.wav");
-	read_clip(MED_SPLASH2, "sounds/medium_splash2.wav");
-	read_clip(MED_SPLASH3, "sounds/medium_splash3.wav");
-	read_clip(MED_SPLASH4, "sounds/medium_splash4.wav");
-	read_clip(MED_SPLASH5, "sounds/medium_splash5.wav");
-	read_clip(MED_SPLASH6, "sounds/medium_splash6.wav");
-	read_clip(MED_SPLASH7, "sounds/medium_splash7.wav");
-	read_clip(MED_SPLASH8, "sounds/medium_splash8.wav");
-	read_clip(ROCKS1, "sounds/rocks1.wav");
-	read_clip(ROCKS2, "sounds/rocks2.wav");
-	read_clip(ROCKS3, "sounds/rocks3.wav");
-	read_clip(ROCKS4, "sounds/rocks4.wav");
-	read_clip(ROCKS5, "sounds/rocks5.wav");
-	read_clip(ROCKS6, "sounds/rocks6.wav");
-	read_clip(ROCKS7, "sounds/rocks7.wav");
-	read_clip(ROCKS8, "sounds/rocks8.wav");
-	read_clip(ROAR, "sounds/wumpus_roar.wav");
-	read_clip(DINE, "sounds/wumpus_dines.wav");
-	read_clip(LEVEL_ONE_SOUND, "sounds/level_one.wav");
-	read_clip(LEVEL_TWO_SOUND, "sounds/level_two.wav");
-	read_clip(LEVEL_THREE_SOUND, "sounds/level_three.wav");
-	read_clip(LEVEL_FOUR_SOUND, "sounds/level_four.wav");
-	read_clip(LEVEL_FIVE_SOUND, "sounds/level_five.wav");
-	read_clip(LEVEL_SIX_SOUND, "sounds/level_six.wav");
-	read_clip(LEVEL_SEVEN_SOUND, "sounds/level_seven.wav");
-	read_clip(LEVEL_EIGHT_SOUND, "sounds/level_eight.wav");
-	read_clip(LEVEL_NINE_SOUND, "sounds/level_nine.wav");
-	read_clip(LEVEL_TEN_SOUND, "sounds/level_ten.wav");
-	read_clip(FAST_BREATH1, "sounds/fast_breath1.wav");
-	read_clip(FAST_BREATH2, "sounds/fast_breath2.wav");
-	read_clip(MILD_SURPRISE, "sounds/mild_surprise_breath.wav");
-	read_clip(SURPRISE, "sounds/huuuuuh.wav");
-	read_clip(HELLO, "sounds/hello.wav");
-	read_clip(OHSHIT, "sounds/oh_shit_oh_shit.wav");
-	read_clip(ARROW_CLATTER, "sounds/arrow_clatter.wav");
-	read_clip(ARROW_WHOOSH, "sounds/arrow_whoosh.wav");
+	printf("Decoding audio data."); fflush(stdout);
+	read_ogg_clip(RUNNING_WATER, "sounds/running_water.ogg");
+	read_ogg_clip(BREATH_SOUND, "sounds/breath2.ogg");
+	read_ogg_clip(HEARTBEAT_SOUND, "sounds/32857_zimm_heartbeat_regular_trimmed.ogg");
+	read_ogg_clip(DRIP_SOUND, "sounds/drips2.ogg");
+	read_ogg_clip(SCARY_MUSIC_SOUND, "sounds/scary_wumpus_music.ogg");
+	read_ogg_clip(INTRO_MUSIC_SOUND, "sounds/wumpus_intro_music.ogg");
+	read_ogg_clip(BETHEWUMPUS_SOUND, "sounds/be_the_wumpus.ogg");
+	read_ogg_clip(FALL_WITH_IMPACT_SOUND, "sounds/fall_with_impact.ogg");
+	read_ogg_clip(LOUD_SPLASH1, "sounds/loud_splash1.ogg");
+	read_ogg_clip(MED_SPLASH1, "sounds/medium_splash1.ogg");
+	read_ogg_clip(MED_SPLASH2, "sounds/medium_splash2.ogg");
+	read_ogg_clip(MED_SPLASH3, "sounds/medium_splash3.ogg");
+	read_ogg_clip(MED_SPLASH4, "sounds/medium_splash4.ogg");
+	read_ogg_clip(MED_SPLASH5, "sounds/medium_splash5.ogg");
+	read_ogg_clip(MED_SPLASH6, "sounds/medium_splash6.ogg");
+	read_ogg_clip(MED_SPLASH7, "sounds/medium_splash7.ogg");
+	read_ogg_clip(MED_SPLASH8, "sounds/medium_splash8.ogg");
+	read_ogg_clip(ROCKS1, "sounds/rocks1.ogg");
+	read_ogg_clip(ROCKS2, "sounds/rocks2.ogg");
+	read_ogg_clip(ROCKS3, "sounds/rocks3.ogg");
+	read_ogg_clip(ROCKS4, "sounds/rocks4.ogg");
+	read_ogg_clip(ROCKS5, "sounds/rocks5.ogg");
+	read_ogg_clip(ROCKS6, "sounds/rocks6.ogg");
+	read_ogg_clip(ROCKS7, "sounds/rocks7.ogg");
+	read_ogg_clip(ROCKS8, "sounds/rocks8.ogg");
+	read_ogg_clip(ROAR, "sounds/wumpus_roar.ogg");
+	read_ogg_clip(DINE, "sounds/wumpus_dines.ogg");
+	read_ogg_clip(LEVEL_ONE_SOUND, "sounds/level_one.ogg");
+	read_ogg_clip(LEVEL_TWO_SOUND, "sounds/level_two.ogg");
+	read_ogg_clip(LEVEL_THREE_SOUND, "sounds/level_three.ogg");
+	read_ogg_clip(LEVEL_FOUR_SOUND, "sounds/level_four.ogg");
+	read_ogg_clip(LEVEL_FIVE_SOUND, "sounds/level_five.ogg");
+	read_ogg_clip(LEVEL_SIX_SOUND, "sounds/level_six.ogg");
+	read_ogg_clip(LEVEL_SEVEN_SOUND, "sounds/level_seven.ogg");
+	read_ogg_clip(LEVEL_EIGHT_SOUND, "sounds/level_eight.ogg");
+	read_ogg_clip(LEVEL_NINE_SOUND, "sounds/level_nine.ogg");
+	read_ogg_clip(LEVEL_TEN_SOUND, "sounds/level_ten.ogg");
+	read_ogg_clip(FAST_BREATH1, "sounds/fast_breath1.ogg");
+	read_ogg_clip(FAST_BREATH2, "sounds/fast_breath2.ogg");
+	read_ogg_clip(MILD_SURPRISE, "sounds/mild_surprise_breath.ogg");
+	read_ogg_clip(SURPRISE, "sounds/huuuuuh.ogg");
+	read_ogg_clip(HELLO, "sounds/hello.ogg");
+	read_ogg_clip(OHSHIT, "sounds/oh_shit_oh_shit.ogg");
+	read_ogg_clip(ARROW_CLATTER, "sounds/arrow_clatter.ogg");
+	read_ogg_clip(ARROW_WHOOSH, "sounds/arrow_whoosh.ogg");
 
-	read_clip(QUBODUP_FALL_WITH_IMPACT, "sounds/qubodup_fall_with_impact.wav");
-	read_clip(QUBODUP_FUCK_FUCK, "sounds/qubodup_fuck_fuck.wav");
-	read_clip(QUBODUP_HELLO, "sounds/qubodup_hello.wav");
-	read_clip(QUBODUP_JESUS_CHRIST1, "sounds/qubodup_jesus_christ1.wav");
-	read_clip(QUBODUP_JESUS_CHRIST2, "sounds/qubodup_jesus_christ2.wav");
-	read_clip(QUBODUP_MILD_SURPRISE1, "sounds/qubodup_mild_surprise1.wav");
-	read_clip(QUBODUP_MILD_SURPRISE2, "sounds/qubodup_mild_surprise2.wav");
-	read_clip(QUBODUP_NORMAL_BREATH1, "sounds/qubodup_normal_breath1.wav");
-	read_clip(QUBODUP_NORMAL_BREATH2, "sounds/qubodup_normal_breath2.wav");
-	read_clip(QUBODUP_NORMAL_BREATH3, "sounds/qubodup_normal_breath3.wav");
-	read_clip(QUBODUP_OH_GOD, "sounds/qubodup_oh_god.wav");
-	read_clip(QUBODUP_OH_GOD2, "sounds/qubodup_oh_god2.wav");
-	read_clip(QUBODUP_SHIT_OH_SHIT, "sounds/qubodup_shit_oh_shit.wav");
-	read_clip(QUBODUP_WHAT_WAS_THAT, "sounds/qubodup_what_was_that.wav");
-	read_clip(QUBODUP_WHO_IS_THERE, "sounds/qubodup_who_is_there.wav");
-	read_clip(QUBODUP_WUMPUS_DINES, "sounds/qubodup_wumpus_dines.wav");
+	read_ogg_clip(QUBODUP_FALL_WITH_IMPACT, "sounds/qubodup_fall_with_impact.ogg");
+	read_ogg_clip(QUBODUP_FUCK_FUCK, "sounds/qubodup_fuck_fuck.ogg");
+	read_ogg_clip(QUBODUP_HELLO, "sounds/qubodup_hello.ogg");
+	read_ogg_clip(QUBODUP_JESUS_CHRIST1, "sounds/qubodup_jesus_christ1.ogg");
+	read_ogg_clip(QUBODUP_JESUS_CHRIST2, "sounds/qubodup_jesus_christ2.ogg");
+	read_ogg_clip(QUBODUP_MILD_SURPRISE1, "sounds/qubodup_mild_surprise1.ogg");
+	read_ogg_clip(QUBODUP_MILD_SURPRISE2, "sounds/qubodup_mild_surprise2.ogg");
+	read_ogg_clip(QUBODUP_NORMAL_BREATH1, "sounds/qubodup_normal_breath1.ogg");
+	read_ogg_clip(QUBODUP_NORMAL_BREATH2, "sounds/qubodup_normal_breath2.ogg");
+	read_ogg_clip(QUBODUP_NORMAL_BREATH3, "sounds/qubodup_normal_breath3.ogg");
+	read_ogg_clip(QUBODUP_OH_GOD, "sounds/qubodup_oh_god.ogg");
+	read_ogg_clip(QUBODUP_OH_GOD2, "sounds/qubodup_oh_god2.ogg");
+	read_ogg_clip(QUBODUP_SHIT_OH_SHIT, "sounds/qubodup_shit_oh_shit.ogg");
+	read_ogg_clip(QUBODUP_WHAT_WAS_THAT, "sounds/qubodup_what_was_that.ogg");
+	read_ogg_clip(QUBODUP_WHO_IS_THERE, "sounds/qubodup_who_is_there.ogg");
+	read_ogg_clip(QUBODUP_WUMPUS_DINES, "sounds/qubodup_wumpus_dines.ogg");
 
-	read_clip(ALPHAHOG_BREATH1, "sounds/alphahog_breath1.wav");
-	read_clip(ALPHAHOG_BREATH2, "sounds/alphahog_breath2.wav");
-	read_clip(ALPHAHOG_BREATH3, "sounds/alphahog_breath3.wav");
-	read_clip(ALPHAHOG_BREATH4, "sounds/alphahog_breath4.wav");
-	read_clip(ALPHAHOG_BREATH5, "sounds/alphahog_breath5.wav");
-	read_clip(ALPHAHOG_BREATH6, "sounds/alphahog_breath6.wav");
-	read_clip(ALPHAHOG_FALL_WITH_IMPACT, "sounds/alphahog_fall_with_impact.wav");
-	read_clip(ALPHAHOG_HELLO2, "sounds/alphahog_hello2.wav");
-	read_clip(ALPHAHOG_HELLO_IS_SOMEONE_THERE, "sounds/alphahog_hello_is_someone_there.wav");
-	read_clip(ALPHAHOG_HUUUH, "sounds/alphahog_huuuh.wav");
-	read_clip(ALPHAHOG_OH_SHEEIT_SHEEIT, "sounds/alphahog_oh_sheeit_sheeit.wav");
-	read_clip(ALPHAHOG_OHSHIT, "sounds/alphahog_ohshit.wav");
-	read_clip(ALPHAHOG_WUMPUS_DINE, "sounds/alphahog_wumpus_dine.wav");
+	read_ogg_clip(ALPHAHOG_BREATH1, "sounds/alphahog_breath1.ogg");
+	read_ogg_clip(ALPHAHOG_BREATH2, "sounds/alphahog_breath2.ogg");
+	read_ogg_clip(ALPHAHOG_BREATH3, "sounds/alphahog_breath3.ogg");
+	read_ogg_clip(ALPHAHOG_BREATH4, "sounds/alphahog_breath4.ogg");
+	read_ogg_clip(ALPHAHOG_BREATH5, "sounds/alphahog_breath5.ogg");
+	read_ogg_clip(ALPHAHOG_BREATH6, "sounds/alphahog_breath6.ogg");
+	read_ogg_clip(ALPHAHOG_FALL_WITH_IMPACT, "sounds/alphahog_fall_with_impact.ogg");
+	read_ogg_clip(ALPHAHOG_HELLO2, "sounds/alphahog_hello2.ogg");
+	read_ogg_clip(ALPHAHOG_HELLO_IS_SOMEONE_THERE, "sounds/alphahog_hello_is_someone_there.ogg");
+	read_ogg_clip(ALPHAHOG_HUUUH, "sounds/alphahog_huuuh.ogg");
+	read_ogg_clip(ALPHAHOG_OH_SHEEIT_SHEEIT, "sounds/alphahog_oh_sheeit_sheeit.ogg");
+	read_ogg_clip(ALPHAHOG_OHSHIT, "sounds/alphahog_ohshit.ogg");
+	read_ogg_clip(ALPHAHOG_WUMPUS_DINE, "sounds/alphahog_wumpus_dine.ogg");
 
 	printf("\n");
 	return 0;

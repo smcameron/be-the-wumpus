@@ -1,6 +1,6 @@
 
 
-SNDLIBS=-lsndfile -lportaudio
+SNDLIBS=-lvorbisfile -lportaudio
 
 DEBUG=-g
 # DEBUG=
@@ -11,23 +11,25 @@ DEBUG=-g
 
 LDFLAGS=${PROFILE_FLAG}
 
-all:	bethewumpus thesounds
+all:	bethewumpus
 
 
 joystick.o:	joystick.c joystick.h Makefile
 	gcc ${DEBUG} -c joystick.c
 
-thesounds:
-	( cd sounds ; make  )
+ogg_to_pcm.o:	ogg_to_pcm.c ogg_to_pcm.h Makefile
+	gcc ${DEBUG} ${PROFILE_FLAG} ${OPTIMIZE_FLAG} `pkg-config --cflags vorbisfile` \
+		-pthread -Wall -c ogg_to_pcm.c
 
-bethewumpus:	bethewumpus.c joystick.o Makefile
-	gcc ${DEBUG} ${PROFILE_FLAG} ${OPTIMIZE_FLAG} -Wall joystick.o \
+bethewumpus:	bethewumpus.c joystick.o ogg_to_pcm.o Makefile
+	gcc ${DEBUG} ${PROFILE_FLAG} ${OPTIMIZE_FLAG} -Wall joystick.o ogg_to_pcm.o \
 		bethewumpus.c -o bethewumpus -lm ${SNDLIBS} \
 		`pkg-config --cflags gtk+-2.0` `pkg-config --libs gtk+-2.0` `pkg-config --libs gthread-2.0`
 
 tarball:
 	mkdir -p d/bethewumpus-${VERSION}/sounds
-	cp Makefile bethewumpus.c bethewumpus.6 joystick.h joystick.c README AUTHORS \
+	cp Makefile bethewumpus.c ogg_to_pcm.c ogg_to_pcm.h \
+		bethewumpus.6 joystick.h joystick.c README AUTHORS \
 		COPYING TODO d/bethewumpus-${VERSION}
 	cp sounds/*.ogg d/bethewumpus-${VERSION}/sounds
 	cp sounds/Attribution.txt d/bethewumpus-${VERSION}/sounds
@@ -39,4 +41,3 @@ tarball:
 clean:
 	rm -f ./bethewumpus ./bethewumpus-*.tar.gz
 	rm -fr ./d
-	( cd sounds ; make clean )
