@@ -1247,25 +1247,25 @@ void player_move()
 	if (rc != 0) {
 		/* Probably because they don't have a joystick. */
 		/* Map keys to joystick.  Very crude. */
-		jse.stick1_x = 0;
-		jse.stick2_y = 0;
+		jse.stick_x = 0;
+		jse.stick_y = 0;
 		jse.button[0] = 0;
 		keyboard_multiplier = 5;
 
 		if (up_arrow_pressed) {
-			jse.stick2_y = -16000; 
+			jse.stick_y = -16000; 
 			up_arrow_pressed = 0;
 		}
 		if (down_arrow_pressed) {
-			jse.stick2_y = 16000; 
+			jse.stick_y = 16000; 
 			down_arrow_pressed = 0;
 		}
 		if (left_arrow_pressed) {
-			jse.stick1_x = -16000; 
+			jse.stick_x = -16000; 
 			left_arrow_pressed = 0;
 		}
 		if (right_arrow_pressed) {
-			jse.stick1_x = 16000; 
+			jse.stick_x = 16000; 
 			right_arrow_pressed = 0;
 		}
 		if (space_bar_pressed) {
@@ -1276,18 +1276,18 @@ void player_move()
 		keyboard_multiplier = 1.0;
 
 	/* rotate */
-	if (jse.stick1_x < -1000) {
-		player.angle = player.angle + keyboard_multiplier * 0.1 * abs(jse.stick1_x)/32767.0;
-	} else if (jse.stick1_x > 1000) {
-		player.angle = player.angle - keyboard_multiplier * 0.1 * abs(jse.stick1_x)/32767.0;
+	if (jse.stick_x < -1000) {
+		player.angle = player.angle + keyboard_multiplier * 0.1 * abs(jse.stick_x)/32767.0;
+	} else if (jse.stick_x > 1000) {
+		player.angle = player.angle - keyboard_multiplier * 0.1 * abs(jse.stick_x)/32767.0;
 	}
 
 	/* move */
-	if (jse.stick2_y < -2000 || jse.stick2_y > 2000) {
+	if (jse.stick_y < -2000 || jse.stick_y > 2000) {
 		oldx = player.x;
 		oldy = player.y;
-		player.x = player.x + cos(player.angle) * 3.0 * keyboard_multiplier * (double) jse.stick2_y / 32767.0;
-		player.y = player.y - sin(player.angle) * 3.0 * keyboard_multiplier * (double) jse.stick2_y / 32767.0;
+		player.x = player.x + cos(player.angle) * 3.0 * keyboard_multiplier * (double) jse.stick_y / 32767.0;
+		player.y = player.y - sin(player.angle) * 3.0 * keyboard_multiplier * (double) jse.stick_y / 32767.0;
 		dx = player.x - (SCREEN_WIDTH/2);
 		dy = player.y - (SCREEN_HEIGHT/2);
 		radius = sqrt(dx * dx + dy * dy);
@@ -1341,7 +1341,7 @@ void player_move()
 			player.y = oldy;
 			/* Here's where to trigger force feedback, if only it worked. */
 		}
-	} /* else if (jse.stick2_y > 2000) {
+	} /* else if (jse.stick_y > 2000) {
 		player.x = player.x + cos(player.angle) * 3.0;
 		player.y = player.y - sin(player.angle) * 3.0;
 	} */
@@ -1350,8 +1350,8 @@ void player_move()
 		if (!player.roar_sound_in_play) {
 			double dist, tx, ty;
 			player.roar_sound_in_play = 1;
-			tx = player.x + cos(player.angle) * 15.0 * (double) jse.stick2_y / 32767.0;
-			ty = player.y - sin(player.angle) * 15.0 * (double) jse.stick2_y / 32767.0;
+			tx = player.x + cos(player.angle) * 15.0 * (double) jse.stick_y / 32767.0;
+			ty = player.y - sin(player.angle) * 15.0 * (double) jse.stick_y / 32767.0;
 			dist = sqrt((meal.s.x - tx) * (meal.s.x - tx) + (meal.s.y - ty) * (meal.s.y - ty));
 			if (dist < MEALDIST) {
 				int dine_sound;
