@@ -1653,7 +1653,7 @@ int main( int   argc,
 				}
 				break;
 			case 1:
-				printf("Be The Wumpus, v. 0.02\n");
+				printf("Be The Wumpus, v. 0.04\n");
 				printf("(c) Copyright Stephen M. Cameron, 2008\n");
 				printf("See the file COPYING for terms of redistribution.\n");
 				exit(0);
