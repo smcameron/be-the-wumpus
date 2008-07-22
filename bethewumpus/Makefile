@@ -35,7 +35,6 @@ tarball:
 		COPYING TODO d/bethewumpus-${VERSION}
 	cp sounds/*.ogg d/bethewumpus-${VERSION}/sounds
 	cp sounds/Attribution.txt d/bethewumpus-${VERSION}/sounds
-	cp sounds/Makefile d/bethewumpus-${VERSION}/sounds
 	chown -R root:root d;
 	( cd d; tar cvf ../bethewumpus-${VERSION}.tar ./bethewumpus-${VERSION} )
 	gzip bethewumpus-${VERSION}.tar
