@@ -1633,7 +1633,7 @@ int main( int   argc,
 	GtkWidget *button;
 	GtkWidget *vbox;
 	GdkColor whitecolor;
-	char *rumbledevicestring;
+	char *rumbledevicestring = NULL;
 	char rumbledevice[PATH_MAX];
 
 	struct timeval time;
