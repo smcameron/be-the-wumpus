@@ -36,6 +36,7 @@
 #include <getopt.h>
 
 #include "joystick.h"
+#include "rumble.h"
 #include "ogg_to_pcm.h"
 
 #define PI (3.1415927)
@@ -400,7 +401,8 @@ struct player_t player;
 static void Quit( GtkWidget *widget,
                    gpointer   data )
 {
-    g_print ("Bye!");
+	stop_all_rumble_effects();
+	g_print ("Bye!");
 }
 
 static inline int randomn(int n)
@@ -1275,15 +1277,21 @@ void player_move()
 	} else
 		keyboard_multiplier = 1.0;
 
+	// printf("x=%d, y=%d\n", jse.stick_x, jse.stick_y);
 	/* rotate */
-	if (jse.stick_x < -1000) {
-		player.angle = player.angle + keyboard_multiplier * 0.1 * abs(jse.stick_x)/32767.0;
-	} else if (jse.stick_x > 1000) {
-		player.angle = player.angle - keyboard_multiplier * 0.1 * abs(jse.stick_x)/32767.0;
+	if (jse.stick_x < -8000) {
+		player.angle = player.angle + keyboard_multiplier * 0.1 * abs((jse.stick_x + 7000))/32767.0;
+	} else if (jse.stick_x > 8000) {
+		player.angle = player.angle - keyboard_multiplier * 0.1 * abs((jse.stick_x - 7000))/32767.0;
 	}
 
 	/* move */
-	if (jse.stick_y < -2000 || jse.stick_y > 2000) {
+	if (jse.stick_y < -8000 || jse.stick_y > 8000) {
+		/* if (jse.stick_y < -8000)
+			jse.stick_y += 7000;
+		if (jse.stick_y > 8000)
+			jse.stick_y -= 7000; */
+		
 		oldx = player.x;
 		oldy = player.y;
 		player.x = player.x + cos(player.angle) * 3.0 * keyboard_multiplier * (double) jse.stick_y / 32767.0;
@@ -1360,6 +1368,7 @@ void player_move()
 				choose_random_sound(dine, dine_sound, dine_vol);
 				add_sound(dine_sound, ANY_SLOT, dine_vol, dine_vol, 
 					NULL, player_roar_sound_end_callback);
+				stop_all_rumble_effects();
 
 				player.won_round = 1;
 			} else {
@@ -1555,6 +1564,40 @@ void meal_move()
 	meal.s.y += vy;
 }
 
+void check_for_rumble()
+{
+	double dist;
+
+	dist = sqrt((meal.s.x - player.x) * (meal.s.x - player.x) +
+		(meal.s.y - player.y) * (meal.s.y - player.y));
+
+	if (dist < (SCREEN_WIDTH / 50)) {
+		play_rumble_effect(5);	
+		return;
+	}
+	if (dist < (SCREEN_WIDTH / 40)) {
+		play_rumble_effect(4);	
+		return;
+	}
+	if (dist < (SCREEN_WIDTH / 30)) {
+		play_rumble_effect(3);	
+		return;
+	}
+	if (dist < (SCREEN_WIDTH / 15)) {
+		play_rumble_effect(2);	
+		return;
+	}
+	if (dist < (SCREEN_WIDTH / 10)) {
+		play_rumble_effect(1);	
+		return;
+	}
+	if (dist < (SCREEN_WIDTH / 5)) {
+		play_rumble_effect(0);	
+		return;
+	}
+	stop_all_rumble_effects();
+}
+
 gint advance_game(gpointer data)
 {
 	player_move();
@@ -1562,6 +1605,10 @@ gint advance_game(gpointer data)
 	arrow_move(&arrow);
 	gtk_widget_queue_draw(main_da);
 	timer++;
+
+	if (timer % (framerate_hz / 4) == 0)
+		check_for_rumble();
+	
 	// printf("Advance game called, timer = %d.\n", timer);
 	return TRUE;
 }
@@ -1576,6 +1623,7 @@ static void destroy( GtkWidget *widget,
 static struct option btw_opts[] = {
 	{ "sounddevice", 1, 0, 0 },
 	{ "version", 0, 0, 1 },
+	{ "rumbledevice", 1, 0, 2 },
 };
 
 int main( int   argc,
@@ -1585,6 +1633,8 @@ int main( int   argc,
 	GtkWidget *button;
 	GtkWidget *vbox;
 	GdkColor whitecolor;
+	char *rumbledevicestring;
+	char rumbledevice[PATH_MAX];
 
 	struct timeval time;
 
@@ -1607,6 +1657,10 @@ int main( int   argc,
 				printf("(c) Copyright Stephen M. Cameron, 2008\n");
 				printf("See the file COPYING for terms of redistribution.\n");
 				exit(0);
+			case 2: /* rumbledevice */ 
+				strcpy(rumbledevice, optarg);
+				rumbledevicestring = rumbledevice;
+				break;
 			default:
 				break;
 		}
@@ -1673,6 +1727,17 @@ int main( int   argc,
 	framerate_hz = 30; 
 	if (joystick < 0)
 		framerate_hz = 20; /* not sure this is necessary. */
+	else {
+		if (get_ready_to_rumble(rumbledevicestring) == 0) {
+			/* assume xbox 360... remap axes */
+			set_joystick_x_axis(0);
+			set_joystick_y_axis(4);
+		} else {
+			/* assume logitech dual action rumble... remap axes */
+			set_joystick_x_axis(0);
+			set_joystick_y_axis(3);
+		}
+	}
 
 	timer_tag = g_timeout_add(1000 / framerate_hz, advance_game, NULL);
     
@@ -1716,6 +1781,7 @@ int main( int   argc,
 
 	gtk_main ();
 	stop_portaudio();
+	stop_all_rumble_effects();
 	close_joystick(joystick);
 	exit(0);	
 }
