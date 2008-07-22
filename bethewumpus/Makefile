@@ -30,7 +30,7 @@ bethewumpus:	bethewumpus.c joystick.o ogg_to_pcm.o rumble.o Makefile
 
 tarball:
 	mkdir -p d/bethewumpus-${VERSION}/sounds
-	cp Makefile bethewumpus.c ogg_to_pcm.c ogg_to_pcm.h \
+	cp Makefile bethewumpus.c ogg_to_pcm.c ogg_to_pcm.h rumble.c rumble.h \
 		bethewumpus.6 joystick.h joystick.c README AUTHORS \
 		COPYING TODO d/bethewumpus-${VERSION}
 	cp sounds/*.ogg d/bethewumpus-${VERSION}/sounds
