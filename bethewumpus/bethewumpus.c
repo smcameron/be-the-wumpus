@@ -761,6 +761,11 @@ int initialize_portaudio()
 	if (sound_device != -1)
 		outparams.device = sound_device;
 
+	if (outparams.device < 0) {
+		rc = -1;
+		goto error;
+	}
+
 	outparams.channelCount = 2;                      /* stereo output */
 	outparams.sampleFormat = paFloat32;              /* 32 bit floating point output */
 	outparams.suggestedLatency = 
