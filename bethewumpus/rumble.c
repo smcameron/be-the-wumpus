@@ -57,7 +57,7 @@ char* effect_names[] = {
 	"Weak Rumble"
 };
 
-static int event_fd;
+static int event_fd = -1;
 static char *default_event_file = "/dev/input/event5";
 static int n_effects;	/* Number of effects the device can play at the same time */
 static unsigned long features[4];
@@ -88,6 +88,9 @@ int play_rumble_effect(int effect)
 	if (effect < 0 || effect >= N_EFFECTS)
 		return -1;
 
+	if (event_fd < 0)
+		return 0;
+
 	struct input_event play;
 
 	play.type = EV_FF;
@@ -103,6 +106,7 @@ int play_rumble_effect(int effect)
 void close_rumble_fd()
 {
 	close(event_fd);
+	event_fd = -1;
 }
 
 int get_ready_to_rumble(char *filename)
