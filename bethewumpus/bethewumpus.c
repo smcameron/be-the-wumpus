@@ -1608,7 +1608,9 @@ gint advance_game(gpointer data)
 	player_move();
 	meal_move();
 	arrow_move(&arrow);
+	gdk_threads_enter();
 	gtk_widget_queue_draw(main_da);
+	gdk_threads_leave();
 	timer++;
 
 	if (timer % (framerate_hz / 4) == 0)
@@ -1728,6 +1730,13 @@ int main( int   argc,
 	gtk_widget_show (vbox);
 	gtk_widget_show (main_da);
 	gtk_widget_show (button);
+
+	/* Apparently (some versions of?) portaudio calls g_thread_init(). */
+	/* It may only be called once, and subsequent calls abort, so */
+	/* only call it if the thread system is not already initialized. */
+	if (!g_thread_supported ())
+		g_thread_init(NULL);
+	gdk_threads_init();
 
 	framerate_hz = 30; 
 	if (joystick < 0)
